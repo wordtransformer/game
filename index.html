@@ -1,0 +1,450 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transformations</title>
+  <style>
+    :root {
+      --bg: #0e0f12;
+      --panel: #161923;
+      --text: #e9eef4;
+      --muted: #9aa6bd;
+      --accent: #8bd2ff;
+      --ok: #2ecc71;
+      --bad: #ff6b6b;
+      --key: #0f1322;
+      --key-border: rgba(255,255,255,.08);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    header {
+      padding: 18px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    h1 { margin: 0; font-size: 20px; }
+    .sub { color: var(--muted); font-size: 13px; margin-top: 6px; }
+    main { display: grid; place-items: start center; padding: 16px; }
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .stack { display: grid; gap: 8px; }
+    .grid { display: grid; gap: 10px; }
+    .center { text-align: center; }
+    .word {
+      display: inline-flex; gap: 8px; padding: 10px 12px; border-radius: 10px;
+      background: #0e1220; border: 1px solid rgba(255,255,255,.06);
+      font-weight: 700; letter-spacing: 2px; font-size: 22px;
+    }
+    input[type="text"] {
+      flex: 1 1 auto;
+      min-width: 180px;
+      background: #0f1322; color: var(--text); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px; padding: 12px 14px; font-size: 18px; letter-spacing: 1px;
+    }
+    button {
+      background: #1f2440; color: var(--text); border: 1px solid rgba(255,255,255,.08);
+      padding: 10px 14px; border-radius: 10px; cursor: pointer;
+    }
+    button.primary { background: var(--accent); color: #071018; border: 0; }
+    .small { font-size: 13px; color: var(--muted); }
+    .ok { color: var(--ok); }
+    .bad { color: var(--bad); }
+    .list { display: grid; gap: 6px; max-height: 320px; overflow: auto; margin-top: 6px; }
+    .pill {
+      display: inline-flex; gap: 8px; align-items: center;
+      background: #11162a; border: 1px solid rgba(255,255,255,.06);
+      padding: 8px 10px; border-radius: 10px;
+      letter-spacing: 1px; font-weight: 600;
+    }
+    .divider { height: 1px; background: rgba(255,255,255,.08); margin: 10px 0; }
+    footer { padding: 20px 16px; color: var(--muted); font-size: 12px; }
+
+    /* On-screen keyboard */
+    .kb {
+      margin-top: 8px;
+      user-select: none;
+      -webkit-user-select: none;
+      display: grid;
+      gap: 8px;
+    }
+    .kb-row {
+      display: grid;
+      grid-auto-flow: column;
+      gap: 6px;
+      justify-content: center;
+    }
+    .key {
+      background: var(--key);
+      border: 1px solid var(--key-border);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      text-align: center;
+      min-width: 34px;
+      cursor: pointer;
+    }
+    .key.wide { min-width: 64px; }
+    .counts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .count-card {
+      background: #0f1322; border: 1px solid rgba(255,255,255,.06);
+      border-radius: 10px; padding: 10px;
+    }
+    .count-card .n { font-size: 22px; font-weight: 800; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Transformations</h1>
+    <div class="sub">Change one letter per move from today’s start. One point per valid transformation.</div>
+  </header>
+
+  <main>
+    <div class="card stack">
+      <!-- Current word beside entry -->
+      <div class="row" style="justify-content: space-between;">
+        <div class="stack" style="min-width: 180px;">
+          <div class="small">Current word</div>
+          <div id="currentWord" class="word">?????</div>
+        </div>
+        <div class="stack" style="flex: 1 1 260px; min-width: 240px;">
+          <div class="small">Your next word</div>
+          <div class="row">
+            <input id="guess" type="text" inputmode="latin" autocomplete="off" autocapitalize="none" maxlength="5" placeholder="five letters">
+            <button id="play" class="primary">Enter</button>
+          </div>
+          <div id="msg" class="small"></div>
+        </div>
+      </div>
+
+      <div class="counts">
+        <div class="count-card">
+          <div class="small">Possible from start</div>
+          <div id="possibleStart" class="n">0</div>
+        </div>
+        <div class="count-card">
+          <div class="small">Remaining from current</div>
+          <div id="possibleRemain" class="n">0</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row" style="justify-content: space-between;">
+        <div class="stack">
+          <div class="small">Score</div>
+          <div id="score" style="font-weight:700; font-size:22px;">0</div>
+        </div>
+        <div class="stack">
+          <div class="small">Max for today</div>
+          <div id="max" style="font-weight:700; font-size:22px;">?</div>
+        </div>
+        <div class="stack" style="align-items: flex-end;">
+          <button id="end">End round</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- On-screen keyboard for mobile -->
+      <div class="kb" id="kb">
+        <div class="kb-row" data-row="qwertyuiop"></div>
+        <div class="kb-row" data-row="asdfghjkl"></div>
+        <div class="kb-row" data-row="zxcvbnm"></div>
+        <div class="kb-row">
+          <div class="key wide" data-key="backspace">⌫</div>
+          <div class="key wide" data-key="enter">Enter</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="stack">
+        <div class="small">Your chain</div>
+        <div id="chain" class="list"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row" style="justify-content: flex-end;">
+        <button id="share">Share</button>
+        <button id="reset" class="">Reset</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Everyone gets the same daily start when using the same dictionary and date. Counts reflect unique neighbors of the relevant word within the dictionary.
+  </footer>
+
+  <script>
+  // Seed words; extended by background fetch for fuller play
+  const SEED = [
+    "shone","shine","shins","spine","swine","thing","think","thank","shank","blank","blink","slink","slick","slice","spice","spike","spine","chine","chime","crime",
+    "crimp","cramp","graph","graft","craft","draft","drift","shift","shirt","short","shout","scout","spout","stout","about","adorn","adore","adobe"
+  ].filter(w => /^[a-z]{5}$/.test(w));
+
+  const ui = {
+    current: document.getElementById('currentWord'),
+    guess: document.getElementById('guess'),
+    play: document.getElementById('play'),
+    msg: document.getElementById('msg'),
+    score: document.getElementById('score'),
+    max: document.getElementById('max'),
+    chain: document.getElementById('chain'),
+    end: document.getElementById('end'),
+    share: document.getElementById('share'),
+    reset: document.getElementById('reset'),
+    possibleStart: document.getElementById('possibleStart'),
+    possibleRemain: document.getElementById('possibleRemain'),
+    kb: document.getElementById('kb')
+  };
+
+  const state = {
+    words: new Set(SEED),
+    patterns: new Map(),
+    start: null,
+    chain: [],
+    used: new Set(),
+    ended: false,
+    dailyKey: null,
+    initialMoves: 0
+  };
+
+  function norm(w){ return (w||"").toLowerCase().trim(); }
+  function ham1(a,b){ if(a.length!==5||b.length!==5) return false; let d=0; for(let i=0;i<5;i++) if(a[i]!==b[i]) d++; return d===1; }
+  function todayKey(){
+    const d=new Date();
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function xmur3(str){ let h=1779033703 ^ str.length; for(let i=0;i<str.length;i++){ h=Math.imul(h ^ str.charCodeAt(i),3432918353); h=(h<<13)|(h>>>19);} return function(){ h=Math.imul(h ^ (h>>>16),2246822507); h=Math.imul(h ^ (h>>>13),3266489909); return (h ^= h>>>16)>>>0; } }
+  function mulberry32(a){ return function(){ let t=a+=0x6D2B79F5; t=Math.imul(t ^ t>>>15, t|1); t^=t+Math.imul(t ^ t>>>7, t|61); return ((t ^ t>>>14)>>>0)/4294967296; } }
+  function seededPick(arr, seedStr){ const seedFn=xmur3(seedStr); const rng=mulberry32(seedFn()); return arr[Math.floor(rng()*arr.length)]; }
+
+  function buildIndex() {
+    state.patterns.clear();
+    const arr = Array.from(state.words);
+    for (let i=0;i<arr.length;i++){
+      const w = arr[i];
+      for (let p=0;p<5;p++){
+        const pat = w.slice(0,p)+"*"+w.slice(p+1);
+        if(!state.patterns.has(pat)) state.patterns.set(pat,[]);
+        state.patterns.get(pat).push(w);
+      }
+    }
+  }
+  function neighborsOf(w){
+    const seen=new Set(), out=[];
+    for(let p=0;p<5;p++){
+      const pat = w.slice(0,p)+"*"+w.slice(p+1);
+      const list = state.patterns.get(pat)||[];
+      for(const v of list) if(v!==w && !seen.has(v)){ seen.add(v); out.push(v); }
+    }
+    return out;
+  }
+  function availableMoves(w){ return neighborsOf(w).filter(v => !state.used.has(v)); }
+
+  function setCountsFor(word){
+    const startCount = neighborsOf(state.start).length;
+    const remainCount = availableMoves(word).length;
+    ui.possibleStart.textContent = String(startCount);
+    ui.possibleRemain.textContent = String(remainCount);
+  }
+
+  function addWord(w, start=false){
+    const div=document.createElement('div');
+    div.className="pill";
+    div.textContent = w.toUpperCase();
+    if (start) div.title = "start";
+    ui.chain.appendChild(div);
+    ui.chain.scrollTop = ui.chain.scrollHeight;
+  }
+
+  function setCurrent(word){
+    ui.current.textContent = word.toUpperCase();
+    setCountsFor(word);
+  }
+
+  function startRound() {
+    buildIndex();
+    const list = Array.from(state.words).filter(w => neighborsOf(w).length >= 2);
+    const key = todayKey();
+    state.dailyKey = key;
+    const start = seededPick(list.length?list:Array.from(state.words), key + ":" + state.words.size);
+    state.start = start;
+    state.chain = [start];
+    state.used = new Set([start]);
+    state.ended = false;
+    ui.chain.innerHTML = "";
+    addWord(start, true);
+    setCurrent(start);
+    ui.score.textContent = "0";
+    ui.msg.textContent = "";
+    ui.max.textContent = localStorage.getItem("tx_max_"+key) || "?";
+    ui.guess.value = "";
+    ui.guess.focus();
+    const finished = localStorage.getItem("tx_done_"+key);
+    if (finished) endRound(true);
+  }
+
+  function tryPlay(nextRaw){
+    if(state.ended){ ui.msg.textContent="Round ended for today."; ui.msg.className="small"; return; }
+    const next = norm(nextRaw);
+    const last = state.chain[state.chain.length-1];
+    if(!/^[a-z]{5}$/.test(next)){ ui.msg.textContent="Type a five letter word."; ui.msg.className="small bad"; return; }
+    if(!state.words.has(next)){ ui.msg.textContent="Not in dictionary."; ui.msg.className="small bad"; return; }
+    if(state.used.has(next)){ ui.msg.textContent="Already used."; ui.msg.className="small bad"; return; }
+    if(!ham1(last,next)){ ui.msg.textContent="Change exactly one letter."; ui.msg.className="small bad"; return; }
+    state.chain.push(next);
+    state.used.add(next);
+    addWord(next);
+    ui.score.textContent = String(state.chain.length-1);
+    ui.msg.textContent = "ok";
+    ui.msg.className = "small ok";
+    setCurrent(next);
+    ui.guess.value = "";
+    ui.guess.focus();
+  }
+
+  function endRound(silent=false){
+    state.ended = true;
+    ui.msg.textContent = silent ? "You already finished today’s round." : "Round complete for today.";
+    ui.msg.className = "small";
+    const key = state.dailyKey;
+    const prev = parseInt(localStorage.getItem("tx_best_"+key)||"0",10);
+    const sc = state.chain.length-1;
+    if (sc > prev) localStorage.setItem("tx_best_"+key, String(sc));
+    localStorage.setItem("tx_done_"+key, "1");
+  }
+
+  async function computeMaxQuick(){
+    const start = state.start;
+    const words = Array.from(state.words);
+    const idx = new Map(words.map((w,i)=>[w,i]));
+    const adj = words.map(_=>[]);
+    for(let i=0;i<words.length;i++){
+      const w = words[i];
+      for(const v of neighborsOf(w)){ adj[i].push(idx.get(v)); }
+    }
+    const startIdx = idx.get(start);
+    const seen = new Uint8Array(words.length);
+    let best = 1;
+    function order(nbs){ return nbs.sort((a,b)=>adj[a].length - adj[b].length); }
+    function dfs(i, depth, limit){
+      if(depth>best) best=depth;
+      if(limit<=0) return;
+      seen[i]=1;
+      const nbs = order(adj[i].filter(j=>!seen[j]));
+      for(const j of nbs){ dfs(j, depth+1, limit-1); }
+      seen[i]=0;
+    }
+    dfs(startIdx, 1, 2000);
+    const key = state.dailyKey;
+    localStorage.setItem("tx_max_"+key, String(best-1));
+    ui.max.textContent = String(best-1);
+  }
+
+  function share(){
+    const key = state.dailyKey;
+    const text = `Transformations ${key}
+Start ${state.start.toUpperCase()}
+Score ${state.chain.length-1}
+Chain ${state.chain.map(w=>w.toUpperCase()).join(" → ")}`;
+    navigator.clipboard.writeText(text).then(()=>{
+      ui.msg.textContent = "Copied results";
+      ui.msg.className = "small";
+    },()=>{
+      ui.msg.textContent = text;
+      ui.msg.className = "small";
+    });
+  }
+
+  // On-screen keyboard logic
+  function buildKeyboard(){
+    const rows = ui.kb.querySelectorAll('.kb-row[data-row]');
+    rows.forEach(row => {
+      const letters = row.getAttribute('data-row');
+      row.innerHTML = "";
+      for (const ch of letters){
+        const key = document.createElement('div');
+        key.className = 'key';
+        key.textContent = ch;
+        key.dataset.key = ch;
+        key.addEventListener('click', () => pressKey(ch));
+        row.appendChild(key);
+      }
+    });
+    // backspace and enter already present, wire them
+    ui.kb.querySelectorAll('.key[data-key]').forEach(k => {
+      if (k.dataset.key === 'backspace'){
+        k.addEventListener('click', () => pressBackspace());
+      } else if (k.dataset.key === 'enter'){
+        k.addEventListener('click', () => pressEnter());
+      }
+    });
+  }
+  function pressKey(ch){
+    if (state.ended) return;
+    ui.guess.value = (ui.guess.value + ch).slice(0,5);
+    ui.guess.focus();
+  }
+  function pressBackspace(){
+    if (state.ended) return;
+    ui.guess.value = ui.guess.value.slice(0,-1);
+    ui.guess.focus();
+  }
+  function pressEnter(){
+    tryPlay(ui.guess.value);
+  }
+
+  // events
+  ui.play.addEventListener('click', ()=> tryPlay(ui.guess.value));
+  ui.guess.addEventListener('keydown', e => { if(e.key==='Enter') tryPlay(ui.guess.value); });
+  ui.end.addEventListener('click', ()=> { endRound(false); computeMaxQuick(); });
+  ui.share.addEventListener('click', share);
+  ui.reset.addEventListener('click', startRound);
+
+  // Attempt to fetch a bigger list to improve play.
+  async function extendDict(){
+    try {
+      const res = await fetch("https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt");
+      const text = await res.text();
+      const add = text.split(/\r?\n/).filter(w => /^[a-z]{5}$/.test(w));
+      if(add.length>1000){
+        for(const w of add) state.words.add(w);
+        buildIndex();
+        // Recompute counts for the current word with expanded dictionary
+        setCountsFor(state.chain[state.chain.length-1]);
+      }
+    } catch {}
+  }
+
+  // init
+  buildKeyboard();
+  buildIndex();
+  startRound();
+  extendDict(); // fire and forget
+  </script>
+</body>
+</html>
