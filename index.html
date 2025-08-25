@@ -5,47 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Transformations — Daily</title>
 <meta name="description" content="Change one letter per move. One daily start word. Score one point per valid transformation.">
-<meta property="og:title" content="Transformations — Daily">
-<meta property="og:description" content="Change one letter per move. One daily start word. Score one point per valid transformation.">
-<meta property="og:type" content="website">
-<meta property="og:image" content="">
-<meta property="og:url" content="">
 <style>
   :root{
-    --bg:#f7f8fb;
-    --panel:#ffffff;
-    --text:#1b1f29;
-    --muted:#58627a;
-    --border:#e3e7ef;
-    --accent:#0b84ff;
-    --accent-2:#ff6a00;
-    --ok:#10b981;
-    --bad:#ef4444;
+    --bg:#f7f8fb; --panel:#ffffff; --text:#1b1f29; --muted:#58627a; --border:#e3e7ef;
+    --accent:#0b84ff; --accent-2:#ff6a00; --ok:#10b981; --bad:#ef4444;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{
-    margin:0;background:var(--bg);color:var(--text);
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
-    display:grid;grid-template-rows:auto 1fr
-  }
-  header{
-    padding:12px;border-bottom:1px solid var(--border);
-    display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center
-  }
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;display:grid;grid-template-rows:auto 1fr}
+  header{padding:12px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
   h1{margin:0;font-size:20px;font-weight:800;letter-spacing:.2px}
   .sub{color:var(--muted);font-size:12px}
   main{display:grid;place-items:center;padding:10px}
-  .board{
-    width:100%;max-width:680px;background:var(--panel);
-    border:1px solid var(--border);border-radius:14px;padding:14px;
-    display:grid;gap:12px;position:relative
-  }
+  .board{width:100%;max-width:680px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;display:grid;gap:12px;position:relative}
   .status{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-  .stat{
-    background:#f2f5fb;border:1px solid var(--border);border-radius:12px;padding:8px;
-    display:grid;gap:2px;place-items:center
-  }
+  .stat{background:#f2f5fb;border:1px solid var(--border);border-radius:12px;padding:8px;display:grid;gap:2px;place-items:center}
   .stat .n{font-size:18px;font-weight:800}
   .small{font-size:12px;color:var(--muted)}
   .progress{width:100%;height:8px;border-radius:999px;background:#eef2f9;overflow:hidden;border:1px solid var(--border)}
@@ -55,20 +29,13 @@
   @media (max-width:580px){.game-row{grid-template-columns:1fr}}
   .word-box,.entry{display:grid;gap:6px;background:#f7faff;border:1px solid var(--border);border-radius:12px;padding:12px}
   .word{font-weight:900;letter-spacing:2px;font-size:28px;text-align:center}
-  input[type="text"]{
-    width:100%;background:#fff;color:var(--text);border:2px solid var(--accent);border-radius:12px;
-    padding:12px;font-size:18px;letter-spacing:1px;outline:none
-  }
+  input[type="text"]{width:100%;background:#fff;color:var(--text);border:2px solid var(--accent);border-radius:12px;padding:12px;font-size:18px;letter-spacing:1px;outline:none}
   input[type="text"]:focus{box-shadow:0 0 0 3px rgba(11,132,255,.25)}
   .buttons{display:grid;grid-auto-flow:column;gap:8px;justify-content:center}
-  button{
-    background:#e9f2ff;color:#0b2470;border:1px solid var(--border);
-    padding:9px 12px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700
-  }
+  button{background:#e9f2ff;color:#0b2470;border:1px solid var(--border);padding:9px 12px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700}
   button.primary{background:var(--accent);color:#fff;border:0}
   .msg{min-height:18px}
-  .ok{color:var(--ok)}
-  .bad{color:var(--bad)}
+  .ok{color:var(--ok)} .bad{color:var(--bad)}
   .chain{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-height:180px;overflow:auto}
   @media (max-width:580px){.chain{grid-template-columns:repeat(4,1fr)}}
   .pill{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:8px 6px;font-weight:800;font-size:14px;letter-spacing:1px;text-align:center}
@@ -137,9 +104,7 @@
     </div>
 
     <div class="friendbox">
-      <div class="small">Friend leaderboard paste lines like
-        Transformations 2025-08-24  start SHINE  score 9  max 12  by rob
-      </div>
+      <div class="small">Friend leaderboard: paste lines like “Transformations 2025-08-24  start SHINE  score 9  max 12  by Rob”</div>
       <textarea id="friendInput" rows="3" placeholder="Paste friend score lines here"></textarea>
       <button id="friendParse">Build leaderboard</button>
       <div id="friendBoard" class="small"></div>
@@ -150,52 +115,37 @@
 <canvas id="fx"></canvas>
 
 <script>
-/* ========== Configuration ========== */
-const SITE_URL = ""; // set your live URL for best sharing cards
-const OG_IMAGE = ""; // optional social preview image
-/* ========== Utilities ========== */
+/* ===== Utilities ===== */
 const norm = s => (s||"").toLowerCase().trim();
 const is5 = s => /^[a-z]{5}$/.test(s);
 const ham1 = (a,b) => { if(a.length!==5||b.length!==5) return false; let d=0; for(let i=0;i<5;i++) if(a[i]!==b[i]) d++; return d===1; };
 const ymd = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+String(d.getDate()).padStart(2,'0'); };
-function seededPick(arr, seedStr){
-  let h=0; for(let i=0;i<seedStr.length;i++) h=(h*131+seedStr.charCodeAt(i))>>>0;
-  function rng(){ h=(h*1664525+1013904223)>>>0; return h/2**32; }
-  return arr[Math.floor(rng()*arr.length)];
-}
+function seededPick(arr, seedStr){ let h=0; for(let i=0;i<seedStr.length;i++) h=(h*131+seedStr.charCodeAt(i))>>>0; function rng(){ h=(h*1664525+1013904223)>>>0; return h/2**32; } return arr[Math.floor(rng()*arr.length)]; }
 
-/* ========== Embedded fallback dictionary ========== */
-/* This list is compact but covers many common moves including shove→stove and glade→grade.
-   On GitHub Pages we also fetch a larger list for full coverage. */
+/* ===== Embedded fallback dictionary (works offline) ===== */
 let DICT = Array.from(new Set([
   "about","above","adobe","adore","adorn","apple","amber","alone","alter",
-  "blade","blame","blank","blink","brain","brain","brand","brine","bring","brink",
+  "blade","blame","blank","blink","brain","brand","bring","brink",
   "chair","chain","chime","chine","crime","cramp","crimp","craft","draft","drift",
   "glade","grade","grape","graph","graft","grain","grand","grant","groin","group",
   "scare","scale","score","shore","share","shave","shine","shins","shirt","short","shout","shone","shove","store","stare","stale","stake","stoke","stone","stony","stood","stool","stout","stove","spare","spike","spine","spiny","spore","spout","spoke","smoke","snake","spice",
   "thing","think","thank",
-  "other","which","their","these","would","could","apple","alone","alter","amber",
-  "train","grain","brain","plain","plane","flame","frame","blame","spine","shine","swine"
+  "other","which","their","these","would","could","alone","alter","amber",
+  "train","grain","brain","plane","flame","frame","blame","spine","shine","swine"
 ]));
 
-/* Optional bigger list when online. CORS works on GitHub Pages. */
+/* ===== Try to expand dictionary online (works on GitHub Pages) ===== */
 (async function loadBig(){
   try{
-    const url="https://raw.githubusercontent.com/tabatkins/wordle-list/main/words"; // 12972 guesses
-    const res = await fetch(url, {mode:"cors"});
-    if(!res.ok) return;
+    const url="https://raw.githubusercontent.com/tabatkins/wordle-list/main/words";
+    const res = await fetch(url, {mode:"cors"}); if(!res.ok) return;
     const text = await res.text();
     const add = text.split(/\r?\n/).map(norm).filter(is5);
-    if(add.length>5000){
-      DICT = Array.from(new Set(add));
-      buildIndex();
-      // refresh counts after dictionary grows
-      setCounts(state.chain[state.chain.length-1]);
-    }
+    if(add.length>5000){ DICT = Array.from(new Set(add)); buildIndex(); setCounts(state.chain[state.chain.length-1]); }
   }catch{}
 })();
 
-/* ========== Index for fast neighbors ========== */
+/* ===== Fast neighbor index ===== */
 let patterns = new Map();
 function buildIndex(){
   patterns = new Map();
@@ -217,41 +167,30 @@ function neighborsOf(w){
   return Array.from(out);
 }
 
-/* ========== Audio and effects ========== */
+/* ===== Audio + Confetti ===== */
 let soundOn = true;
 const AudioFX = (()=> {
   let ctx;
   function ac(){ return ctx||(ctx=new (window.AudioContext||window.webkitAudioContext)()); }
   function tone(freq, dur, type="sine", gain=0.15){
-    const a=ac();
-    const o=a.createOscillator(), g=a.createGain();
-    o.type=type; o.frequency.value=freq; g.gain.value=gain;
-    o.connect(g).connect(a.destination);
-    o.start();
-    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime+dur);
-    o.stop(a.currentTime+dur);
+    if(!soundOn) return;
+    const a=ac(), o=a.createOscillator(), g=a.createGain();
+    o.type=type; o.frequency.value=freq; g.gain.value=gain; o.connect(g).connect(a.destination);
+    o.start(); g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime+dur); o.stop(a.currentTime+dur);
   }
-  function chord(fs=[392,494,587], dur=.25){ if(!soundOn) return; fs.forEach((f,i)=>tone(f, dur*(1.1-.15*i), i? "triangle":"sine", .12)); }
-  function fanfare(){ if(!soundOn) return; chord([523,659,784], .35); setTimeout(()=>chord([659,784,988], .45), 180); }
-  function buzz(){ if(!soundOn) return; tone(200,.05,"square",.12); setTimeout(()=>tone(180,.06,"square",.1),60); }
+  function chord(fs=[392,494,587], dur=.25){ fs.forEach((f,i)=>tone(f, dur*(1.1-.15*i), i? "triangle":"sine", .12)); }
+  function fanfare(){ chord([523,659,784], .35); setTimeout(()=>chord([659,784,988], .45), 180); }
+  function buzz(){ tone(200,.05,"square",.12); setTimeout(()=>tone(180,.06,"square",.1),60); }
   return { chord, fanfare, buzz };
 })();
-
-/* Confetti */
 const FX = (()=> {
-  const cv = document.getElementById("fx");
-  const cx = cv.getContext("2d");
+  const cv = document.getElementById("fx"), cx = cv.getContext("2d");
   let running=false, parts=[];
   function resize(){ cv.width=innerWidth; cv.height=innerHeight; }
-  window.addEventListener("resize",resize); resize();
+  addEventListener("resize",resize); resize();
   function burst(x,y,n=160){
     for(let i=0;i<n;i++){
-      parts.push({
-        x, y, vx:(Math.random()*2-1)*6, vy:Math.random()*-6-2,
-        r: Math.random()*6+2, a:1,
-        c: Math.random()<.5? "#0b84ff" : "#ff6a00",
-        spin: (Math.random()*2-1)*.2
-      });
+      parts.push({x,y,vx:(Math.random()*2-1)*6,vy:Math.random()*-6-2,r:Math.random()*6+2,a:1,c:Math.random()<.5?"#0b84ff":"#ff6a00",spin:(Math.random()*2-1)*.2});
     }
     if(!running){ running=true; requestAnimationFrame(tick); }
   }
@@ -269,7 +208,7 @@ const FX = (()=> {
   return { burst };
 })();
 
-/* ========== State and UI ========== */
+/* ===== UI refs & state ===== */
 const ui = {
   date: document.getElementById("dateLabel"),
   score: document.getElementById("scoreN"),
@@ -297,10 +236,9 @@ const ui = {
   friendParse: document.getElementById("friendParse"),
   friendBoard: document.getElementById("friendBoard")
 };
-
 const state = { start:null, chain:[], used:new Set(), key:null, maxEstimate:null };
 
-/* ========== Core gameplay ========== */
+/* ===== Core gameplay ===== */
 function addPill(w, start=false){
   const div=document.createElement("div"); div.className="pill"; div.textContent=w.toUpperCase();
   if(start) div.title="start"; ui.chain.prepend(div);
@@ -382,7 +320,7 @@ function endRound(){
   AudioFX.fanfare(); FX.burst(innerWidth*0.5, innerHeight*0.3, 220);
 }
 
-/* ========== Countdown toggle ========== */
+/* ===== Countdown toggle ===== */
 const Timer = {
   on:false,
   tick(){
@@ -395,13 +333,13 @@ const Timer = {
   }
 };
 
-/* ========== Sharing ========== */
+/* ===== Sharing ===== */
 function shareText(){
   const d = ymd();
   const score = state.chain.length-1;
   const max = state.maxEstimate ?? "?";
   const start = state.start?.toUpperCase() || "?????";
-  return `Transformations ${d}  start ${start}  score ${score}  max ${max}${SITE_URL? `  ${SITE_URL}`:""}`;
+  return `Transformations ${d}  start ${start}  score ${score}  max ${max}`;
 }
 function copyShare(){
   const t = shareText();
@@ -409,7 +347,7 @@ function copyShare(){
 }
 function shareWeb(){
   const t = shareText();
-  if(navigator.share){ navigator.share({title:"Transformations", text:t, url:SITE_URL||location.href}).catch(()=>{}); }
+  if(navigator.share){ navigator.share({title:"Transformations", text:t, url:location.href}).catch(()=>{}); }
   else { copyShare(); }
 }
 function openX(){
@@ -417,10 +355,10 @@ function openX(){
   window.open(url,"_blank");
 }
 function openFB(){
-  const url = "https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(SITE_URL||location.href)+"&quote="+encodeURIComponent(shareText());
+  const url = "https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(location.href)+"&quote="+encodeURIComponent(shareText());
   window.open(url,"_blank");
 }
-/* Story card for Instagram etc */
+/* Story card (Instagram etc.) */
 function storyImageDataURL(){
   const W=1080,H=1920;
   const c=document.createElement("canvas"); c.width=W; c.height=H; const ctx=c.getContext("2d");
@@ -432,12 +370,10 @@ function storyImageDataURL(){
   ctx.font="28px Inter, system-ui"; ctx.fillText(ymd(), 80, 240);
   ctx.font="48px Inter, system-ui"; ctx.fillText("Start "+(state.start||"").toUpperCase(), 80, 340);
   ctx.font="72px Inter, system-ui"; ctx.fillText("Score "+score+(max?(" / "+max):""), 80, 430);
-  ctx.font="28px Inter, system-ui"; const u=(SITE_URL||location.href.split('#')[0]); ctx.fillText(u, 80, H-80);
-  // chain pills
+  ctx.font="28px Inter, system-ui"; ctx.fillText(location.href.split('#')[0], 80, H-80);
   let x=80,y=660;
   for(const w of state.chain){
-    ctx.fillStyle="#0b84ff"; ctx.beginPath(); const r=14, ww=48+ w.length*22; ctx.roundRect?.(x,y,ww,44,r); // modern browsers
-    if(!ctx.roundRect){ ctx.rect(x,y,ww,44); } ctx.fill();
+    ctx.fillStyle="#0b84ff"; ctx.beginPath(); const r=14, ww=48+ w.length*22; ctx.roundRect?.(x,y,ww,44,r); if(!ctx.roundRect){ ctx.rect(x,y,ww,44); } ctx.fill();
     ctx.fillStyle="#fff"; ctx.font="600 28px Inter, system-ui"; ctx.fillText(w.toUpperCase(), x+16, y+30);
     x+=ww+12; if(x>W-200){ x=80; y+=60; }
   }
@@ -448,12 +384,11 @@ function downloadStory(){
   const a=document.createElement("a"); a.href=url; a.download="transformations-story.png"; document.body.appendChild(a); a.click(); a.remove();
 }
 
-/* ========== Friend leaderboard ========== */
+/* ===== Friend leaderboard ===== */
 function buildFriendBoard(){
   const lines = ui.friendInput.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
   const rows = [];
   for(const ln of lines){
-    // expected pattern: Transformations YYYY-MM-DD  start WORD  score N  max M  by NAME
     const m = ln.match(/Transformations\s+(\d{4}-\d{2}-\d{2}).*?start\s+([A-Za-z]{5}).*?score\s+(\d+).*?(?:max\s+(\d+))?.*?(?:by\s+(.+))?$/i);
     if(m){ rows.push({date:m[1], start:m[2].toUpperCase(), score:parseInt(m[3],10)||0, max:m[4]?parseInt(m[4],10):null, who:(m[5]||"friend").trim()}); }
   }
@@ -461,25 +396,23 @@ function buildFriendBoard(){
   ui.friendBoard.innerHTML = rows.length? "<b>Leaderboard</b><br>"+rows.map((r,i)=>`${i+1}. ${r.who}  score ${r.score}${r.max? " of "+r.max:""}  start ${r.start}`).join("<br>") : "No valid lines yet";
 }
 
-/* ========== Events ========== */
+/* ===== Events ===== */
 ui.enter.addEventListener("click", ()=> tryPlay(ui.guess.value));
 ui.guess.addEventListener("keydown", e=>{ if(e.key==="Enter") tryPlay(ui.guess.value); });
 ui.end.addEventListener("click", endRound);
 ui.reset.addEventListener("click", startRound);
 ui.timerSwitch.addEventListener("change", ()=>{ Timer.on = ui.timerSwitch.checked; ui.countdown.style.display = Timer.on? "block":"none"; if(Timer.on) Timer.tick(); });
-ui.copy.addEventListener("click", copyShare);
-ui.webshare.addEventListener("click", shareWeb);
-ui.x.addEventListener("click", openX);
-ui.fb.addEventListener("click", openFB);
-ui.story.addEventListener("click", downloadStory);
+ui.copy.addEventListener("click", ()=>{ copyShare(); });
+ui.webshare.addEventListener("click", ()=>{ shareWeb(); });
+ui.x.addEventListener("click", ()=>{ openX(); });
+ui.fb.addEventListener("click", ()=>{ openFB(); });
+ui.story.addEventListener("click", ()=>{ downloadStory(); });
 ui.sound.addEventListener("click", ()=>{ soundOn=!soundOn; ui.sound.textContent = soundOn? "Sound on":"Sound off"; });
-
 ui.friendParse.addEventListener("click", buildFriendBoard);
 
-/* ========== Init ========== */
+/* ===== Init ===== */
 buildIndex();
 startRound();
-/* end */
 </script>
 </body>
 </html>
