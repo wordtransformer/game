@@ -18,7 +18,7 @@
   .sub{color:var(--muted);font-size:12px}
   main{display:grid;place-items:center;padding:10px}
   .board{width:100%;max-width:680px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;display:grid;gap:12px;position:relative}
-  .status{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .status{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
   .stat{background:#f2f5fb;border:1px solid var(--border);border-radius:12px;padding:8px;display:grid;gap:2px;place-items:center}
   .stat .n{font-size:18px;font-weight:800}
   .small{font-size:12px;color:var(--muted)}
@@ -39,7 +39,7 @@
   .chain{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-height:180px;overflow:auto}
   @media (max-width:580px){.chain{grid-template-columns:repeat(4,1fr)}}
   .pill{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:8px 6px;font-weight:800;font-size:14px;letter-spacing:1px;text-align:center}
-  .sharebar{display:grid;grid-auto-flow:column;gap:8px;justify-content:center}
+  .sharebar{display:grid;grid-auto-flow:column;gap:8px;justify-content:center;align-items:center}
   .switch{appearance:none;width:38px;height:22px;background:#cfd7ea;border-radius:11px;position:relative;outline:none;cursor:pointer}
   .switch:checked{background:#22c55e}
   .switch:before{content:"";position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:2px;left:2px;transition:left .15s ease}
@@ -64,6 +64,7 @@
       <div class="stat"><div class="small">Start moves</div><div id="fromStartN" class="n">0</div></div>
       <div class="stat"><div class="small">Possible words</div><div id="remainN" class="n">0</div></div>
       <div class="stat"><div class="small">Best chain</div><div id="pbN" class="n">0</div></div>
+      <div class="stat"><div class="small">Max today</div><div id="maxToday" class="n">?</div></div>
       <div class="stat">
         <div class="small">Countdown</div>
         <label><input id="timerSwitch" type="checkbox" class="switch"></label>
@@ -86,6 +87,7 @@
           <button id="enterBtn" class="primary">Enter</button>
           <button id="endBtn">End</button>
           <button id="resetBtn">Reset</button>
+          <button id="dictModeBtn" title="Broader word list">Lenient: Off</button>
         </div>
         <div id="msg" class="small msg"></div>
       </div>
@@ -101,10 +103,15 @@
       <button id="fbBtn">Share to Facebook</button>
       <button id="storyBtn">Story card</button>
       <button id="soundBtn">Sound on</button>
+      <select id="themePick" title="Theme">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="hc">High Contrast</option>
+      </select>
     </div>
 
     <div class="friendbox">
-      <div class="small">Friend leaderboard: paste lines like “Transformations 2025-08-24  start SHINE  score 9  max 12  by Rob”</div>
+      <div class="small">Friend leaderboard. Paste lines like: Transformations 2025-08-24  start SHINE  score 9  max 12  by Rob</div>
       <textarea id="friendInput" rows="3" placeholder="Paste friend score lines here"></textarea>
       <button id="friendParse">Build leaderboard</button>
       <div id="friendBoard" class="small"></div>
@@ -115,59 +122,17 @@
 <canvas id="fx"></canvas>
 
 <script>
-/* ===== Utilities ===== */
+/* configuration */
+const SITE_URL = location.href.split('#')[0];
+
+/* helpers */
 const norm = s => (s||"").toLowerCase().trim();
 const is5 = s => /^[a-z]{5}$/.test(s);
 const ham1 = (a,b) => { if(a.length!==5||b.length!==5) return false; let d=0; for(let i=0;i<5;i++) if(a[i]!==b[i]) d++; return d===1; };
 const ymd = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+String(d.getDate()).padStart(2,'0'); };
 function seededPick(arr, seedStr){ let h=0; for(let i=0;i<seedStr.length;i++) h=(h*131+seedStr.charCodeAt(i))>>>0; function rng(){ h=(h*1664525+1013904223)>>>0; return h/2**32; } return arr[Math.floor(rng()*arr.length)]; }
 
-/* ===== Embedded fallback dictionary (works offline) ===== */
-let DICT = Array.from(new Set([
-  "about","above","adobe","adore","adorn","apple","amber","alone","alter",
-  "blade","blame","blank","blink","brain","brand","bring","brink",
-  "chair","chain","chime","chine","crime","cramp","crimp","craft","draft","drift",
-  "glade","grade","grape","graph","graft","grain","grand","grant","groin","group",
-  "scare","scale","score","shore","share","shave","shine","shins","shirt","short","shout","shone","shove","store","stare","stale","stake","stoke","stone","stony","stood","stool","stout","stove","spare","spike","spine","spiny","spore","spout","spoke","smoke","snake","spice",
-  "thing","think","thank",
-  "other","which","their","these","would","could","alone","alter","amber",
-  "train","grain","brain","plane","flame","frame","blame","spine","shine","swine"
-]));
-
-/* ===== Try to expand dictionary online (works on GitHub Pages) ===== */
-(async function loadBig(){
-  try{
-    const url="https://raw.githubusercontent.com/tabatkins/wordle-list/main/words";
-    const res = await fetch(url, {mode:"cors"}); if(!res.ok) return;
-    const text = await res.text();
-    const add = text.split(/\r?\n/).map(norm).filter(is5);
-    if(add.length>5000){ DICT = Array.from(new Set(add)); buildIndex(); setCounts(state.chain[state.chain.length-1]); }
-  }catch{}
-})();
-
-/* ===== Fast neighbor index ===== */
-let patterns = new Map();
-function buildIndex(){
-  patterns = new Map();
-  for(const w of DICT){
-    for(let i=0;i<5;i++){
-      const pat = w.slice(0,i)+"*"+w.slice(i+1);
-      if(!patterns.has(pat)) patterns.set(pat,[]);
-      patterns.get(pat).push(w);
-    }
-  }
-}
-function neighborsOf(w){
-  const out=new Set();
-  for(let i=0;i<5;i++){
-    const pat=w.slice(0,i)+"*"+w.slice(i+1);
-    const list=patterns.get(pat)||[];
-    for(const v of list) if(v!==w) out.add(v);
-  }
-  return Array.from(out);
-}
-
-/* ===== Audio + Confetti ===== */
+/* audio and confetti */
 let soundOn = true;
 const AudioFX = (()=> {
   let ctx;
@@ -208,13 +173,27 @@ const FX = (()=> {
   return { burst };
 })();
 
-/* ===== UI refs & state ===== */
+/* theme */
+const THEMES = {
+  light: {'--bg':'#f7f8fb','--panel':'#ffffff','--text':'#1b1f29','--muted':'#58627a','--border':'#e3e7ef','--accent':'#0b84ff','--accent-2':'#ff6a00','--ok':'#10b981','--bad':'#ef4444'},
+  dark: {'--bg':'#0f1116','--panel':'#151a24','--text':'#eaf1f8','--muted':'#9fb0c8','--border':'#263044','--accent':'#8bd2ff','--accent-2':'#ffa726','--ok':'#2ecc71','--bad':'#ff6b6b'},
+  hc:   {'--bg':'#ffffff','--panel':'#ffffff','--text':'#000000','--muted':'#111111','--border':'#000000','--accent':'#000000','--accent-2':'#ff0000','--ok':'#007700','--bad':'#cc0000'}
+};
+function applyTheme(name){
+  const t = THEMES[name] || THEMES.light;
+  for (const k in t) document.documentElement.style.setProperty(k, t[k]);
+  localStorage.setItem('tx_theme', name);
+  const sel = document.getElementById('themePick'); if (sel) sel.value = name;
+}
+
+/* UI refs */
 const ui = {
   date: document.getElementById("dateLabel"),
   score: document.getElementById("scoreN"),
   fromStart: document.getElementById("fromStartN"),
   remain: document.getElementById("remainN"),
   pb: document.getElementById("pbN"),
+  maxToday: document.getElementById("maxToday"),
   current: document.getElementById("currentWord"),
   guess: document.getElementById("guess"),
   enter: document.getElementById("enterBtn"),
@@ -232,13 +211,121 @@ const ui = {
   fb: document.getElementById("fbBtn"),
   story: document.getElementById("storyBtn"),
   sound: document.getElementById("soundBtn"),
+  dictBtn: document.getElementById("dictModeBtn"),
+  themePick: document.getElementById("themePick"),
   friendInput: document.getElementById("friendInput"),
   friendParse: document.getElementById("friendParse"),
   friendBoard: document.getElementById("friendBoard")
 };
+
+/* dictionary sources */
+const GIST_LA = "https://gist.githubusercontent.com/scholtes/94f3c0303ba6a7768b47583aff36654d/raw/wordle-La.txt";
+const GIST_TA = "https://gist.githubusercontent.com/scholtes/94f3c0303ba6a7768b47583aff36654d/raw/wordle-Ta.txt";
+const TABATKINS = "https://raw.githubusercontent.com/tabatkins/wordle-list/main/words";
+const EXTRA_URL = "https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt";
+
+/* dictionary state */
+const FALLBACK = Array.from(new Set([
+  "about","above","adobe","adore","adorn","apple","amber","alone","alter",
+  "blade","blame","blank","blink","brain","brand","bring","brink",
+  "chair","chain","chime","chine","crime","cramp","crimp","craft","draft","drift",
+  "glade","grade","grape","graph","graft","grain","grand","grant","groin","group",
+  "shore","share","shave","shine","shins","short","shone","shove","store","stone","stony","stove",
+  "spare","spike","spine","spiny","spore","spout","spoke","smoke","snake","spice",
+  "thing","think","thank","other","which","their","these","would","could",
+  "train","grain","brain","plane","flame","frame","blame","swine"
+]));
+let DICT_STD = FALLBACK.slice();     // Standard mode
+let DICT_LENIENT = FALLBACK.slice(); // Lenient mode
+let USE_LENIENT = false;
+
+/* cache helpers */
+function loadCache(key){ try{ return JSON.parse(localStorage.getItem(key)||"null"); } catch { return null; } }
+function saveCache(key,val){ try{ localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+/* neighbor index */
+let patterns = new Map();
+function currentDict(){ return USE_LENIENT ? DICT_LENIENT : DICT_STD; }
+function buildIndex(){
+  const base = currentDict();
+  patterns = new Map();
+  for(const w of base){
+    for(let i=0;i<5;i++){
+      const pat = w.slice(0,i)+"*"+w.slice(i+1);
+      if(!patterns.has(pat)) patterns.set(pat,[]);
+      patterns.get(pat).push(w);
+    }
+  }
+}
+function neighborsOf(w){
+  const byWord = new Set(currentDict());
+  const out=new Set();
+  for(let i=0;i<5;i++){
+    const pat=w.slice(0,i)+"*"+w.slice(i+1);
+    const list=patterns.get(pat)||[];
+    for(const v of list) if(v!==w && byWord.has(v)) out.add(v);
+  }
+  return Array.from(out);
+}
+function dictIncludes(word){
+  const key = USE_LENIENT? "len" : "std";
+  if(!dictIncludes._sets) dictIncludes._sets={};
+  if(!dictIncludes._sets[key]) dictIncludes._sets[key] = new Set(currentDict());
+  return dictIncludes._sets[key].has(word);
+}
+
+/* load dictionaries in order: gist La+Ta, then Tabatkins, then extra for lenient */
+async function loadDictionaries(){
+  const c1 = loadCache("tx_dict_std_gist_v1");
+  const c2 = loadCache("tx_dict_len_gist_v1");
+  if(c1 && c2){ DICT_STD=c1; DICT_LENIENT=c2; buildIndex(); return; }
+
+  let std = new Set(FALLBACK);
+  let len = new Set(FALLBACK);
+
+  async function addWordFile(url, targetSet){
+    try{
+      const res = await fetch(url, {mode:"cors"});
+      if(!res.ok) return;
+      const txt = await res.text();
+      // Both gist files and Tabatkins list are whitespace separated or newline lists
+      txt.split(/[\s\r\n]+/).map(norm).filter(is5).forEach(w=>targetSet.add(w));
+    }catch{}
+  }
+
+  // gist Wordle La and Ta
+  await addWordFile(GIST_LA, std);
+  await addWordFile(GIST_TA, std);   // include Ta for allowed guesses
+  await addWordFile(GIST_LA, len);
+  await addWordFile(GIST_TA, len);
+
+  // backup list if gist is unavailable
+  await addWordFile(TABATKINS, std);
+  await addWordFile(TABATKINS, len);
+
+  // only lenient pulls from the huge list
+  try{
+    const res = await fetch(EXTRA_URL, {mode:"cors"});
+    if(res.ok){
+      const txt = await res.text();
+      // streaming parse is overkill here; quick split works in browsers
+      txt.split(/\r?\n/).forEach(w=>{ const v=norm(w); if(is5(v)) len.add(v); });
+    }
+  }catch{}
+
+  DICT_STD = Array.from(std);
+  DICT_LENIENT = Array.from(len);
+
+  saveCache("tx_dict_std_gist_v1", DICT_STD);
+  saveCache("tx_dict_len_gist_v1", DICT_LENIENT);
+
+  buildIndex();
+}
+
+/* game state */
 const state = { start:null, chain:[], used:new Set(), key:null, maxEstimate:null };
 
-/* ===== Core gameplay ===== */
+/* UI logic */
 function addPill(w, start=false){
   const div=document.createElement("div"); div.className="pill"; div.textContent=w.toUpperCase();
   if(start) div.title="start"; ui.chain.prepend(div);
@@ -253,6 +340,7 @@ function setCounts(word){
   const pct = Math.min(100, Math.round((state.chain.length-1)/goal*100));
   ui.progFill.style.width = pct + "%";
   ui.maxLine.textContent = max ? "Max today " + max : "Max today ?";
+  ui.maxToday.textContent = max ? String(max) : "?";
 }
 function setCurrent(w){ ui.current.textContent=w.toUpperCase(); setCounts(w); }
 function showMsg(text, ok=false){
@@ -266,9 +354,9 @@ function updatePB(){
   ui.pb.textContent = String(Math.max(prev, sc));
 }
 function computeMaxQuick(){
-  const words=DICT, idx=new Map(words.map((w,i)=>[w,i]));
+  const words=currentDict(), idx=new Map(words.map((w,i)=>[w,i]));
   const adj=words.map(_=>[]);
-  for(let i=0;i<words.length;i++){ const w=words[i]; for(const v of neighborsOf(w)) adj[i].push(idx.get(v)); }
+  for(let i=0;i<words.length;i++){ const w=words[i]; const nbs=neighborsOf(w); for(const v of nbs){ const j=idx.get(v); if(j!=null) adj[i].push(j); } }
   const startIdx = idx.get(state.start); if(startIdx==null) return 0;
   const seen=new Uint8Array(words.length); let best=1;
   function order(nbs){ return nbs.sort((a,b)=>adj[a].length - adj[b].length); }
@@ -277,11 +365,10 @@ function computeMaxQuick(){
   return Math.max(0,best-1);
 }
 function pickDailyStart(){
-  const candidates = DICT.filter(w=>neighborsOf(w).length>=2);
-  return candidates.length ? seededPick(candidates, ymd()+":"+DICT.length) : DICT[0];
+  const candidates = currentDict().filter(w=>neighborsOf(w).length>=2);
+  return candidates.length ? seededPick(candidates, ymd()+":"+currentDict().length) : currentDict()[0] || "about";
 }
 function startRound(){
-  buildIndex();
   state.key = ymd();
   state.start = pickDailyStart();
   state.chain = [state.start];
@@ -303,7 +390,7 @@ function tryPlay(raw){
   const next = norm(raw);
   const last = state.chain[state.chain.length-1];
   if(!is5(next)){ showMsg("Type five letters"); AudioFX.buzz(); navigator.vibrate?.(25); return; }
-  if(!DICT.includes(next)){ showMsg("Not in word list"); AudioFX.buzz(); navigator.vibrate?.([20,30,20]); return; }
+  if(!dictIncludes(next)){ showMsg("Not in word list"); AudioFX.buzz(); navigator.vibrate?.([20,30,20]); return; }
   if(state.used.has(next)){ showMsg("Already used"); AudioFX.buzz(); return; }
   if(!ham1(last,next)){ showMsg("Change exactly one letter"); AudioFX.buzz(); return; }
   state.chain.push(next); state.used.add(next); addPill(next);
@@ -320,7 +407,7 @@ function endRound(){
   AudioFX.fanfare(); FX.burst(innerWidth*0.5, innerHeight*0.3, 220);
 }
 
-/* ===== Countdown toggle ===== */
+/* countdown */
 const Timer = {
   on:false,
   tick(){
@@ -333,13 +420,13 @@ const Timer = {
   }
 };
 
-/* ===== Sharing ===== */
+/* sharing */
 function shareText(){
   const d = ymd();
   const score = state.chain.length-1;
   const max = state.maxEstimate ?? "?";
   const start = state.start?.toUpperCase() || "?????";
-  return `Transformations ${d}  start ${start}  score ${score}  max ${max}`;
+  return `Transformations ${d}  start ${start}  score ${score}  max ${max}  ${SITE_URL}`;
 }
 function copyShare(){
   const t = shareText();
@@ -347,7 +434,7 @@ function copyShare(){
 }
 function shareWeb(){
   const t = shareText();
-  if(navigator.share){ navigator.share({title:"Transformations", text:t, url:location.href}).catch(()=>{}); }
+  if(navigator.share){ navigator.share({title:"Transformations", text:t, url:SITE_URL}).catch(()=>{}); }
   else { copyShare(); }
 }
 function openX(){
@@ -355,10 +442,9 @@ function openX(){
   window.open(url,"_blank");
 }
 function openFB(){
-  const url = "https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(location.href)+"&quote="+encodeURIComponent(shareText());
+  const url = "https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(SITE_URL)+"&quote="+encodeURIComponent(shareText());
   window.open(url,"_blank");
 }
-/* Story card (Instagram etc.) */
 function storyImageDataURL(){
   const W=1080,H=1920;
   const c=document.createElement("canvas"); c.width=W; c.height=H; const ctx=c.getContext("2d");
@@ -370,10 +456,10 @@ function storyImageDataURL(){
   ctx.font="28px Inter, system-ui"; ctx.fillText(ymd(), 80, 240);
   ctx.font="48px Inter, system-ui"; ctx.fillText("Start "+(state.start||"").toUpperCase(), 80, 340);
   ctx.font="72px Inter, system-ui"; ctx.fillText("Score "+score+(max?(" / "+max):""), 80, 430);
-  ctx.font="28px Inter, system-ui"; ctx.fillText(location.href.split('#')[0], 80, H-80);
+  ctx.font="28px Inter, system-ui"; ctx.fillText(SITE_URL, 80, H-80);
   let x=80,y=660;
   for(const w of state.chain){
-    ctx.fillStyle="#0b84ff"; ctx.beginPath(); const r=14, ww=48+ w.length*22; ctx.roundRect?.(x,y,ww,44,r); if(!ctx.roundRect){ ctx.rect(x,y,ww,44); } ctx.fill();
+    ctx.fillStyle="#0b84ff"; ctx.beginPath(); const r=14, ww=48+ w.length*22; if(ctx.roundRect) ctx.roundRect(x,y,ww,44,r); else ctx.rect(x,y,ww,44); ctx.fill();
     ctx.fillStyle="#fff"; ctx.font="600 28px Inter, system-ui"; ctx.fillText(w.toUpperCase(), x+16, y+30);
     x+=ww+12; if(x>W-200){ x=80; y+=60; }
   }
@@ -384,7 +470,7 @@ function downloadStory(){
   const a=document.createElement("a"); a.href=url; a.download="transformations-story.png"; document.body.appendChild(a); a.click(); a.remove();
 }
 
-/* ===== Friend leaderboard ===== */
+/* friend leaderboard */
 function buildFriendBoard(){
   const lines = ui.friendInput.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
   const rows = [];
@@ -396,23 +482,38 @@ function buildFriendBoard(){
   ui.friendBoard.innerHTML = rows.length? "<b>Leaderboard</b><br>"+rows.map((r,i)=>`${i+1}. ${r.who}  score ${r.score}${r.max? " of "+r.max:""}  start ${r.start}`).join("<br>") : "No valid lines yet";
 }
 
-/* ===== Events ===== */
+/* wire up events */
 ui.enter.addEventListener("click", ()=> tryPlay(ui.guess.value));
 ui.guess.addEventListener("keydown", e=>{ if(e.key==="Enter") tryPlay(ui.guess.value); });
 ui.end.addEventListener("click", endRound);
-ui.reset.addEventListener("click", startRound);
+ui.reset.addEventListener("click", ()=>{ buildIndex(); startRound(); });
 ui.timerSwitch.addEventListener("change", ()=>{ Timer.on = ui.timerSwitch.checked; ui.countdown.style.display = Timer.on? "block":"none"; if(Timer.on) Timer.tick(); });
-ui.copy.addEventListener("click", ()=>{ copyShare(); });
-ui.webshare.addEventListener("click", ()=>{ shareWeb(); });
-ui.x.addEventListener("click", ()=>{ openX(); });
-ui.fb.addEventListener("click", ()=>{ openFB(); });
-ui.story.addEventListener("click", ()=>{ downloadStory(); });
+ui.copy.addEventListener("click", copyShare);
+ui.webshare.addEventListener("click", shareWeb);
+ui.x.addEventListener("click", openX);
+ui.fb.addEventListener("click", openFB);
+ui.story.addEventListener("click", downloadStory);
 ui.sound.addEventListener("click", ()=>{ soundOn=!soundOn; ui.sound.textContent = soundOn? "Sound on":"Sound off"; });
+ui.dictBtn.addEventListener("click", ()=>{
+  USE_LENIENT = !USE_LENIENT;
+  ui.dictBtn.textContent = "Lenient: " + (USE_LENIENT ? "On" : "Off");
+  dictIncludes._sets = {};
+  buildIndex();
+  setCounts(state.chain[state.chain.length-1]);
+  showMsg(USE_LENIENT ? "Lenient dictionary enabled" : "Standard dictionary", true);
+});
 ui.friendParse.addEventListener("click", buildFriendBoard);
+ui.themePick.addEventListener("change", e=>applyTheme(e.target.value));
 
-/* ===== Init ===== */
-buildIndex();
-startRound();
+/* init */
+applyTheme(localStorage.getItem('tx_theme') || 'light');
+loadDictionaries().then(()=>{
+  buildIndex();
+  startRound();
+}).catch(()=>{
+  buildIndex();
+  startRound();
+});
 </script>
 </body>
 </html>
