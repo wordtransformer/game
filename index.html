@@ -32,11 +32,15 @@
   </div>
 <script>
 const DICT = [
-  "shove","stove","shore","store","stone","stony","short","shine","spine","swine","grade","glade","blade","blame","flame","frame","thing","think","thank","chair","chain","spice","spike","spore","spout","share","shave","about","other","which","their","these","would","could","apple","amber","alone","alter","grand","grant","grain","brain","train"
-]; // fallback; can be expanded
+  "shove","stove","shore","store","stone","stony","short","shine","spine","swine",
+  "grade","glade","blade","blame","flame","frame","thing","think","thank",
+  "chair","chain","spice","spike","spore","spout","share","shave",
+  "about","other","which","their","these","would","could","apple","amber","alone","alter",
+  "grand","grant","grain","brain","train"
+]; // fallback word list
 
 function ham1(a,b){ if(a.length!==5||b.length!==5) return false; let d=0; for(let i=0;i<5;i++) if(a[i]!==b[i]) d++; return d===1; }
-function neighborsOf(w){ const out=new Set(); for(let i=0;i<5;i++){ for(const v of DICT){ if(v!==w && ham1(w,v)) out.add(v); } } return [...out]; }
+function neighborsOf(w){ return DICT.filter(v=>v!==w && ham1(w,v)); }
 
 const start = DICT[Math.floor(Math.random()*DICT.length)];
 let used = new Set([start]);
@@ -59,12 +63,10 @@ function setCurrent(w){
 function addPill(w){
   const div=document.createElement('div'); div.className='pill'; div.textContent=w.toUpperCase(); ui.chain.appendChild(div);
 }
-
 function showMsg(text,ok=false){
   ui.msg.textContent=text; ui.msg.className="msg "+(ok?"ok":"bad");
   setTimeout(()=>{ui.msg.textContent=""; ui.msg.className="msg";},1200);
 }
-
 function play(word){
   const last=chain[chain.length-1];
   word=word.toLowerCase().trim();
@@ -74,7 +76,6 @@ function play(word){
   if(!ham1(last,word)){showMsg("Change 1 letter");return;}
   chain.push(word); used.add(word); addPill(word); setCurrent(word); showMsg("ok",true); ui.guess.value="";
 }
-
 ui.enter.addEventListener('click',()=>play(ui.guess.value));
 ui.guess.addEventListener('keydown',e=>{if(e.key==='Enter') play(ui.guess.value);});
 
