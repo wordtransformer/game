@@ -1,85 +1,485 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Transformations — Daily</title>
-  <style>
-    body { background:#0f1116; color:#eaf1f8; font-family:sans-serif; margin:0; display:grid; place-items:center; min-height:100vh; }
-    .board { width:100%; max-width:600px; background:#151a24; padding:20px; border-radius:10px; display:grid; gap:10px; }
-    h1 { margin:0; font-size:20px; text-align:center; }
-    .word { font-size:26px; text-align:center; font-weight:bold; letter-spacing:2px; }
-    input { width:100%; padding:10px; font-size:18px; border:2px solid orange; border-radius:8px; background:#0f1423; color:white; }
-    button { padding:8px 12px; border-radius:6px; border:0; background:orange; color:black; cursor:pointer; font-weight:bold; }
-    .pill { background:orange; color:black; font-weight:bold; padding:6px; border-radius:6px; text-align:center; }
-    .chain { display:flex; flex-wrap:wrap; gap:5px; }
-    .msg { min-height:20px; text-align:center; font-weight:bold; }
-    .ok { color:#2ecc71; }
-    .bad { color:#ff6b6b; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Transformations — Daily</title>
+<meta name="description" content="Change one letter per move. One daily start word. Score one point per valid transformation.">
+<meta property="og:title" content="Transformations — Daily">
+<meta property="og:description" content="Change one letter per move. One daily start word. Score one point per valid transformation.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="">
+<meta property="og:url" content="">
+<style>
+  :root{
+    --bg:#f7f8fb;
+    --panel:#ffffff;
+    --text:#1b1f29;
+    --muted:#58627a;
+    --border:#e3e7ef;
+    --accent:#0b84ff;
+    --accent-2:#ff6a00;
+    --ok:#10b981;
+    --bad:#ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+    display:grid;grid-template-rows:auto 1fr
+  }
+  header{
+    padding:12px;border-bottom:1px solid var(--border);
+    display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center
+  }
+  h1{margin:0;font-size:20px;font-weight:800;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12px}
+  main{display:grid;place-items:center;padding:10px}
+  .board{
+    width:100%;max-width:680px;background:var(--panel);
+    border:1px solid var(--border);border-radius:14px;padding:14px;
+    display:grid;gap:12px;position:relative
+  }
+  .status{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .stat{
+    background:#f2f5fb;border:1px solid var(--border);border-radius:12px;padding:8px;
+    display:grid;gap:2px;place-items:center
+  }
+  .stat .n{font-size:18px;font-weight:800}
+  .small{font-size:12px;color:var(--muted)}
+  .progress{width:100%;height:8px;border-radius:999px;background:#eef2f9;overflow:hidden;border:1px solid var(--border)}
+  .progress>div{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .25s ease}
+  .bar{text-align:center;font-size:12px;color:var(--muted)}
+  .game-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:580px){.game-row{grid-template-columns:1fr}}
+  .word-box,.entry{display:grid;gap:6px;background:#f7faff;border:1px solid var(--border);border-radius:12px;padding:12px}
+  .word{font-weight:900;letter-spacing:2px;font-size:28px;text-align:center}
+  input[type="text"]{
+    width:100%;background:#fff;color:var(--text);border:2px solid var(--accent);border-radius:12px;
+    padding:12px;font-size:18px;letter-spacing:1px;outline:none
+  }
+  input[type="text"]:focus{box-shadow:0 0 0 3px rgba(11,132,255,.25)}
+  .buttons{display:grid;grid-auto-flow:column;gap:8px;justify-content:center}
+  button{
+    background:#e9f2ff;color:#0b2470;border:1px solid var(--border);
+    padding:9px 12px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700
+  }
+  button.primary{background:var(--accent);color:#fff;border:0}
+  .msg{min-height:18px}
+  .ok{color:var(--ok)}
+  .bad{color:var(--bad)}
+  .chain{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-height:180px;overflow:auto}
+  @media (max-width:580px){.chain{grid-template-columns:repeat(4,1fr)}}
+  .pill{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:8px 6px;font-weight:800;font-size:14px;letter-spacing:1px;text-align:center}
+  .sharebar{display:grid;grid-auto-flow:column;gap:8px;justify-content:center}
+  .switch{appearance:none;width:38px;height:22px;background:#cfd7ea;border-radius:11px;position:relative;outline:none;cursor:pointer}
+  .switch:checked{background:#22c55e}
+  .switch:before{content:"";position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:2px;left:2px;transition:left .15s ease}
+  .switch:checked:before{left:18px}
+  .friendbox{display:grid;gap:6px;background:#f7faff;border:1px solid var(--border);border-radius:12px;padding:10px}
+  canvas#fx{position:fixed;inset:0;pointer-events:none}
+</style>
 </head>
 <body>
-  <div class="board">
+<header>
+  <div>
     <h1>Transformations — Daily</h1>
-    <div>Current word:</div>
-    <div id="currentWord" class="word">?????</div>
-    <input id="guess" maxlength="5" placeholder="Enter next word">
-    <button id="enterBtn">Enter</button>
-    <div id="msg" class="msg"></div>
-    <div>Chain:</div>
-    <div id="chain" class="chain"></div>
-    <div>Possible moves: <span id="remainN">0</span></div>
+    <div class="sub">Change one letter per move. One point per valid transformation</div>
   </div>
+  <div class="sub" id="dateLabel"></div>
+</header>
+
+<main>
+  <div class="board">
+    <div class="status">
+      <div class="stat"><div class="small">Score</div><div id="scoreN" class="n">0</div></div>
+      <div class="stat"><div class="small">Start moves</div><div id="fromStartN" class="n">0</div></div>
+      <div class="stat"><div class="small">Possible words</div><div id="remainN" class="n">0</div></div>
+      <div class="stat"><div class="small">Best chain</div><div id="pbN" class="n">0</div></div>
+      <div class="stat">
+        <div class="small">Countdown</div>
+        <label><input id="timerSwitch" type="checkbox" class="switch"></label>
+      </div>
+    </div>
+
+    <div class="progress"><div id="progFill"></div></div>
+    <div class="bar" id="maxLine">Max today ?</div>
+    <div class="bar" id="countDown" style="display:none">Next puzzle in 00:00:00</div>
+
+    <div class="game-row">
+      <div class="word-box">
+        <div class="small">Current word</div>
+        <div id="currentWord" class="word">?????</div>
+      </div>
+      <div class="entry">
+        <div class="small">Your next word</div>
+        <input id="guess" type="text" maxlength="5" inputmode="latin" autocomplete="off" autocapitalize="none" placeholder="Enter next word">
+        <div class="buttons">
+          <button id="enterBtn" class="primary">Enter</button>
+          <button id="endBtn">End</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+        <div id="msg" class="small msg"></div>
+      </div>
+    </div>
+
+    <div class="small">Your chain</div>
+    <div id="chain" class="chain"></div>
+
+    <div class="sharebar">
+      <button id="copyBtn">Copy share</button>
+      <button id="webshareBtn">Share…</button>
+      <button id="xBtn">Share to X</button>
+      <button id="fbBtn">Share to Facebook</button>
+      <button id="storyBtn">Story card</button>
+      <button id="soundBtn">Sound on</button>
+    </div>
+
+    <div class="friendbox">
+      <div class="small">Friend leaderboard paste lines like
+        Transformations 2025-08-24  start SHINE  score 9  max 12  by rob
+      </div>
+      <textarea id="friendInput" rows="3" placeholder="Paste friend score lines here"></textarea>
+      <button id="friendParse">Build leaderboard</button>
+      <div id="friendBoard" class="small"></div>
+    </div>
+  </div>
+</main>
+
+<canvas id="fx"></canvas>
+
 <script>
-const DICT = [
-  "shove","stove","shore","store","stone","stony","short","shine","spine","swine",
-  "grade","glade","blade","blame","flame","frame","thing","think","thank",
-  "chair","chain","spice","spike","spore","spout","share","shave",
-  "about","other","which","their","these","would","could","apple","amber","alone","alter",
-  "grand","grant","grain","brain","train"
-]; // fallback word list
+/* ========== Configuration ========== */
+const SITE_URL = ""; // set your live URL for best sharing cards
+const OG_IMAGE = ""; // optional social preview image
+/* ========== Utilities ========== */
+const norm = s => (s||"").toLowerCase().trim();
+const is5 = s => /^[a-z]{5}$/.test(s);
+const ham1 = (a,b) => { if(a.length!==5||b.length!==5) return false; let d=0; for(let i=0;i<5;i++) if(a[i]!==b[i]) d++; return d===1; };
+const ymd = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+String(d.getDate()).padStart(2,'0'); };
+function seededPick(arr, seedStr){
+  let h=0; for(let i=0;i<seedStr.length;i++) h=(h*131+seedStr.charCodeAt(i))>>>0;
+  function rng(){ h=(h*1664525+1013904223)>>>0; return h/2**32; }
+  return arr[Math.floor(rng()*arr.length)];
+}
 
-function ham1(a,b){ if(a.length!==5||b.length!==5) return false; let d=0; for(let i=0;i<5;i++) if(a[i]!==b[i]) d++; return d===1; }
-function neighborsOf(w){ return DICT.filter(v=>v!==w && ham1(w,v)); }
+/* ========== Embedded fallback dictionary ========== */
+/* This list is compact but covers many common moves including shove→stove and glade→grade.
+   On GitHub Pages we also fetch a larger list for full coverage. */
+let DICT = Array.from(new Set([
+  "about","above","adobe","adore","adorn","apple","amber","alone","alter",
+  "blade","blame","blank","blink","brain","brain","brand","brine","bring","brink",
+  "chair","chain","chime","chine","crime","cramp","crimp","craft","draft","drift",
+  "glade","grade","grape","graph","graft","grain","grand","grant","groin","group",
+  "scare","scale","score","shore","share","shave","shine","shins","shirt","short","shout","shone","shove","store","stare","stale","stake","stoke","stone","stony","stood","stool","stout","stove","spare","spike","spine","spiny","spore","spout","spoke","smoke","snake","spice",
+  "thing","think","thank",
+  "other","which","their","these","would","could","apple","alone","alter","amber",
+  "train","grain","brain","plain","plane","flame","frame","blame","spine","shine","swine"
+]));
 
-const start = DICT[Math.floor(Math.random()*DICT.length)];
-let used = new Set([start]);
-let chain = [start];
+/* Optional bigger list when online. CORS works on GitHub Pages. */
+(async function loadBig(){
+  try{
+    const url="https://raw.githubusercontent.com/tabatkins/wordle-list/main/words"; // 12972 guesses
+    const res = await fetch(url, {mode:"cors"});
+    if(!res.ok) return;
+    const text = await res.text();
+    const add = text.split(/\r?\n/).map(norm).filter(is5);
+    if(add.length>5000){
+      DICT = Array.from(new Set(add));
+      buildIndex();
+      // refresh counts after dictionary grows
+      setCounts(state.chain[state.chain.length-1]);
+    }
+  }catch{}
+})();
 
+/* ========== Index for fast neighbors ========== */
+let patterns = new Map();
+function buildIndex(){
+  patterns = new Map();
+  for(const w of DICT){
+    for(let i=0;i<5;i++){
+      const pat = w.slice(0,i)+"*"+w.slice(i+1);
+      if(!patterns.has(pat)) patterns.set(pat,[]);
+      patterns.get(pat).push(w);
+    }
+  }
+}
+function neighborsOf(w){
+  const out=new Set();
+  for(let i=0;i<5;i++){
+    const pat=w.slice(0,i)+"*"+w.slice(i+1);
+    const list=patterns.get(pat)||[];
+    for(const v of list) if(v!==w) out.add(v);
+  }
+  return Array.from(out);
+}
+
+/* ========== Audio and effects ========== */
+let soundOn = true;
+const AudioFX = (()=> {
+  let ctx;
+  function ac(){ return ctx||(ctx=new (window.AudioContext||window.webkitAudioContext)()); }
+  function tone(freq, dur, type="sine", gain=0.15){
+    const a=ac();
+    const o=a.createOscillator(), g=a.createGain();
+    o.type=type; o.frequency.value=freq; g.gain.value=gain;
+    o.connect(g).connect(a.destination);
+    o.start();
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime+dur);
+    o.stop(a.currentTime+dur);
+  }
+  function chord(fs=[392,494,587], dur=.25){ if(!soundOn) return; fs.forEach((f,i)=>tone(f, dur*(1.1-.15*i), i? "triangle":"sine", .12)); }
+  function fanfare(){ if(!soundOn) return; chord([523,659,784], .35); setTimeout(()=>chord([659,784,988], .45), 180); }
+  function buzz(){ if(!soundOn) return; tone(200,.05,"square",.12); setTimeout(()=>tone(180,.06,"square",.1),60); }
+  return { chord, fanfare, buzz };
+})();
+
+/* Confetti */
+const FX = (()=> {
+  const cv = document.getElementById("fx");
+  const cx = cv.getContext("2d");
+  let running=false, parts=[];
+  function resize(){ cv.width=innerWidth; cv.height=innerHeight; }
+  window.addEventListener("resize",resize); resize();
+  function burst(x,y,n=160){
+    for(let i=0;i<n;i++){
+      parts.push({
+        x, y, vx:(Math.random()*2-1)*6, vy:Math.random()*-6-2,
+        r: Math.random()*6+2, a:1,
+        c: Math.random()<.5? "#0b84ff" : "#ff6a00",
+        spin: (Math.random()*2-1)*.2
+      });
+    }
+    if(!running){ running=true; requestAnimationFrame(tick); }
+  }
+  function tick(){
+    cx.clearRect(0,0,cv.width,cv.height);
+    for(const p of parts){
+      p.vy+=0.12; p.x+=p.vx; p.y+=p.vy; p.a*=0.985;
+      cx.save(); cx.globalAlpha=p.a; cx.translate(p.x,p.y); cx.rotate(p.spin); cx.fillStyle=p.c;
+      cx.beginPath(); cx.moveTo(-p.r,0); cx.lineTo(0,-p.r); cx.lineTo(p.r,0); cx.lineTo(0,p.r); cx.closePath(); cx.fill();
+      cx.restore();
+    }
+    parts = parts.filter(p=>p.a>0.05 && p.y<cv.height+20);
+    if(parts.length){ requestAnimationFrame(tick); } else { running=false; }
+  }
+  return { burst };
+})();
+
+/* ========== State and UI ========== */
 const ui = {
-  current: document.getElementById('currentWord'),
-  guess: document.getElementById('guess'),
-  enter: document.getElementById('enterBtn'),
-  msg: document.getElementById('msg'),
-  chain: document.getElementById('chain'),
-  remain: document.getElementById('remainN')
+  date: document.getElementById("dateLabel"),
+  score: document.getElementById("scoreN"),
+  fromStart: document.getElementById("fromStartN"),
+  remain: document.getElementById("remainN"),
+  pb: document.getElementById("pbN"),
+  current: document.getElementById("currentWord"),
+  guess: document.getElementById("guess"),
+  enter: document.getElementById("enterBtn"),
+  end: document.getElementById("endBtn"),
+  reset: document.getElementById("resetBtn"),
+  chain: document.getElementById("chain"),
+  msg: document.getElementById("msg"),
+  maxLine: document.getElementById("maxLine"),
+  progFill: document.getElementById("progFill"),
+  timerSwitch: document.getElementById("timerSwitch"),
+  countdown: document.getElementById("countDown"),
+  copy: document.getElementById("copyBtn"),
+  webshare: document.getElementById("webshareBtn"),
+  x: document.getElementById("xBtn"),
+  fb: document.getElementById("fbBtn"),
+  story: document.getElementById("storyBtn"),
+  sound: document.getElementById("soundBtn"),
+  friendInput: document.getElementById("friendInput"),
+  friendParse: document.getElementById("friendParse"),
+  friendBoard: document.getElementById("friendBoard")
 };
 
-function setCurrent(w){
-  ui.current.textContent = w.toUpperCase();
-  const moves = neighborsOf(w).filter(v=>!used.has(v)).length;
-  ui.remain.textContent = moves;
-}
-function addPill(w){
-  const div=document.createElement('div'); div.className='pill'; div.textContent=w.toUpperCase(); ui.chain.appendChild(div);
-}
-function showMsg(text,ok=false){
-  ui.msg.textContent=text; ui.msg.className="msg "+(ok?"ok":"bad");
-  setTimeout(()=>{ui.msg.textContent=""; ui.msg.className="msg";},1200);
-}
-function play(word){
-  const last=chain[chain.length-1];
-  word=word.toLowerCase().trim();
-  if(!/^[a-z]{5}$/.test(word)){showMsg("Type 5 letters");return;}
-  if(!DICT.includes(word)){showMsg("Not in word list");return;}
-  if(used.has(word)){showMsg("Already used");return;}
-  if(!ham1(last,word)){showMsg("Change 1 letter");return;}
-  chain.push(word); used.add(word); addPill(word); setCurrent(word); showMsg("ok",true); ui.guess.value="";
-}
-ui.enter.addEventListener('click',()=>play(ui.guess.value));
-ui.guess.addEventListener('keydown',e=>{if(e.key==='Enter') play(ui.guess.value);});
+const state = { start:null, chain:[], used:new Set(), key:null, maxEstimate:null };
 
-setCurrent(start); addPill(start);
+/* ========== Core gameplay ========== */
+function addPill(w, start=false){
+  const div=document.createElement("div"); div.className="pill"; div.textContent=w.toUpperCase();
+  if(start) div.title="start"; ui.chain.prepend(div);
+}
+function setCounts(word){
+  const startMoves = neighborsOf(state.start).length;
+  const currentMoves = neighborsOf(word).filter(v=>!state.used.has(v)).length;
+  ui.fromStart.textContent = String(startMoves);
+  ui.remain.textContent = String(currentMoves);
+  const max = state.maxEstimate || 0;
+  const goal = Math.max(1,max);
+  const pct = Math.min(100, Math.round((state.chain.length-1)/goal*100));
+  ui.progFill.style.width = pct + "%";
+  ui.maxLine.textContent = max ? "Max today " + max : "Max today ?";
+}
+function setCurrent(w){ ui.current.textContent=w.toUpperCase(); setCounts(w); }
+function showMsg(text, ok=false){
+  ui.msg.textContent=text; ui.msg.className="small msg " + (ok? "ok":"bad");
+  setTimeout(()=>{ if(ui.msg.textContent===text){ ui.msg.textContent=""; ui.msg.className="small msg"; } }, 1100);
+}
+function updatePB(){
+  const sc = state.chain.length-1;
+  const prev = parseInt(localStorage.getItem("tx_pb_chain")||"0",10);
+  if(sc>prev){ localStorage.setItem("tx_pb_chain", String(sc)); AudioFX.fanfare(); FX.burst(innerWidth*0.5, 120); }
+  ui.pb.textContent = String(Math.max(prev, sc));
+}
+function computeMaxQuick(){
+  const words=DICT, idx=new Map(words.map((w,i)=>[w,i]));
+  const adj=words.map(_=>[]);
+  for(let i=0;i<words.length;i++){ const w=words[i]; for(const v of neighborsOf(w)) adj[i].push(idx.get(v)); }
+  const startIdx = idx.get(state.start); if(startIdx==null) return 0;
+  const seen=new Uint8Array(words.length); let best=1;
+  function order(nbs){ return nbs.sort((a,b)=>adj[a].length - adj[b].length); }
+  function dfs(i,d,limit){ if(d>best) best=d; if(limit<=0) return; seen[i]=1; const nbs=order(adj[i].filter(j=>!seen[j])); for(const j of nbs) dfs(j,d+1,limit-1); seen[i]=0; }
+  dfs(startIdx,1,1200);
+  return Math.max(0,best-1);
+}
+function pickDailyStart(){
+  const candidates = DICT.filter(w=>neighborsOf(w).length>=2);
+  return candidates.length ? seededPick(candidates, ymd()+":"+DICT.length) : DICT[0];
+}
+function startRound(){
+  buildIndex();
+  state.key = ymd();
+  state.start = pickDailyStart();
+  state.chain = [state.start];
+  state.used = new Set([state.start]);
+  ui.chain.innerHTML="";
+  addPill(state.start,true);
+  setCurrent(state.start);
+  ui.score.textContent = "0";
+  ui.msg.textContent="";
+  ui.guess.value="";
+  ui.guess.focus();
+  const d = new Date(); ui.date.textContent = d.toLocaleDateString();
+  state.maxEstimate = computeMaxQuick();
+  setCounts(state.start);
+  const prev = parseInt(localStorage.getItem("tx_pb_chain")||"0",10);
+  ui.pb.textContent = String(prev);
+}
+function tryPlay(raw){
+  const next = norm(raw);
+  const last = state.chain[state.chain.length-1];
+  if(!is5(next)){ showMsg("Type five letters"); AudioFX.buzz(); navigator.vibrate?.(25); return; }
+  if(!DICT.includes(next)){ showMsg("Not in word list"); AudioFX.buzz(); navigator.vibrate?.([20,30,20]); return; }
+  if(state.used.has(next)){ showMsg("Already used"); AudioFX.buzz(); return; }
+  if(!ham1(last,next)){ showMsg("Change exactly one letter"); AudioFX.buzz(); return; }
+  state.chain.push(next); state.used.add(next); addPill(next);
+  ui.score.textContent = String(state.chain.length-1);
+  setCurrent(next);
+  showMsg("ok",true); AudioFX.chord([440,554,659],.18); FX.burst(innerWidth*0.5, 90, 40);
+  ui.guess.value=""; ui.guess.focus();
+  updatePB();
+}
+function endRound(){
+  state.maxEstimate = computeMaxQuick();
+  setCounts(state.chain[state.chain.length-1]);
+  showMsg("Round complete", true);
+  AudioFX.fanfare(); FX.burst(innerWidth*0.5, innerHeight*0.3, 220);
+}
+
+/* ========== Countdown toggle ========== */
+const Timer = {
+  on:false,
+  tick(){
+    if(!Timer.on) return;
+    const now=new Date(); const next=new Date(now); next.setHours(24,0,0,0);
+    const ms=Math.max(0,next-now);
+    const h=Math.floor(ms/3600000), m=Math.floor((ms%3600000)/60000), s=Math.floor((ms%60000)/1000);
+    ui.countdown.textContent="Next puzzle in "+String(h).padStart(2,'0')+":"+String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');
+    requestAnimationFrame(Timer.tick);
+  }
+};
+
+/* ========== Sharing ========== */
+function shareText(){
+  const d = ymd();
+  const score = state.chain.length-1;
+  const max = state.maxEstimate ?? "?";
+  const start = state.start?.toUpperCase() || "?????";
+  return `Transformations ${d}  start ${start}  score ${score}  max ${max}${SITE_URL? `  ${SITE_URL}`:""}`;
+}
+function copyShare(){
+  const t = shareText();
+  navigator.clipboard?.writeText(t).then(()=>showMsg("Copied",true)).catch(()=>showMsg("Copy failed"));
+}
+function shareWeb(){
+  const t = shareText();
+  if(navigator.share){ navigator.share({title:"Transformations", text:t, url:SITE_URL||location.href}).catch(()=>{}); }
+  else { copyShare(); }
+}
+function openX(){
+  const url = "https://twitter.com/intent/tweet?text="+encodeURIComponent(shareText());
+  window.open(url,"_blank");
+}
+function openFB(){
+  const url = "https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(SITE_URL||location.href)+"&quote="+encodeURIComponent(shareText());
+  window.open(url,"_blank");
+}
+/* Story card for Instagram etc */
+function storyImageDataURL(){
+  const W=1080,H=1920;
+  const c=document.createElement("canvas"); c.width=W; c.height=H; const ctx=c.getContext("2d");
+  const g=ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,"#ffffff"); g.addColorStop(1,"#eaf2ff"); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#0b84ff"; ctx.fillRect(80, 560, W-160, 18);
+  const score = state.chain.length-1, max = state.maxEstimate||0; const pct = max? Math.min(1, score/max):0;
+  ctx.fillStyle="#ff6a00"; ctx.fillRect(80, 560, Math.round((W-160)*pct), 18);
+  ctx.fillStyle="#1b1f29"; ctx.font="900 84px Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial"; ctx.fillText("TRANSFORMATIONS", 80, 200);
+  ctx.font="28px Inter, system-ui"; ctx.fillText(ymd(), 80, 240);
+  ctx.font="48px Inter, system-ui"; ctx.fillText("Start "+(state.start||"").toUpperCase(), 80, 340);
+  ctx.font="72px Inter, system-ui"; ctx.fillText("Score "+score+(max?(" / "+max):""), 80, 430);
+  ctx.font="28px Inter, system-ui"; const u=(SITE_URL||location.href.split('#')[0]); ctx.fillText(u, 80, H-80);
+  // chain pills
+  let x=80,y=660;
+  for(const w of state.chain){
+    ctx.fillStyle="#0b84ff"; ctx.beginPath(); const r=14, ww=48+ w.length*22; ctx.roundRect?.(x,y,ww,44,r); // modern browsers
+    if(!ctx.roundRect){ ctx.rect(x,y,ww,44); } ctx.fill();
+    ctx.fillStyle="#fff"; ctx.font="600 28px Inter, system-ui"; ctx.fillText(w.toUpperCase(), x+16, y+30);
+    x+=ww+12; if(x>W-200){ x=80; y+=60; }
+  }
+  return c.toDataURL("image/png");
+}
+function downloadStory(){
+  const url = storyImageDataURL();
+  const a=document.createElement("a"); a.href=url; a.download="transformations-story.png"; document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ========== Friend leaderboard ========== */
+function buildFriendBoard(){
+  const lines = ui.friendInput.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const rows = [];
+  for(const ln of lines){
+    // expected pattern: Transformations YYYY-MM-DD  start WORD  score N  max M  by NAME
+    const m = ln.match(/Transformations\s+(\d{4}-\d{2}-\d{2}).*?start\s+([A-Za-z]{5}).*?score\s+(\d+).*?(?:max\s+(\d+))?.*?(?:by\s+(.+))?$/i);
+    if(m){ rows.push({date:m[1], start:m[2].toUpperCase(), score:parseInt(m[3],10)||0, max:m[4]?parseInt(m[4],10):null, who:(m[5]||"friend").trim()}); }
+  }
+  rows.sort((a,b)=>b.score-a.score);
+  ui.friendBoard.innerHTML = rows.length? "<b>Leaderboard</b><br>"+rows.map((r,i)=>`${i+1}. ${r.who}  score ${r.score}${r.max? " of "+r.max:""}  start ${r.start}`).join("<br>") : "No valid lines yet";
+}
+
+/* ========== Events ========== */
+ui.enter.addEventListener("click", ()=> tryPlay(ui.guess.value));
+ui.guess.addEventListener("keydown", e=>{ if(e.key==="Enter") tryPlay(ui.guess.value); });
+ui.end.addEventListener("click", endRound);
+ui.reset.addEventListener("click", startRound);
+ui.timerSwitch.addEventListener("change", ()=>{ Timer.on = ui.timerSwitch.checked; ui.countdown.style.display = Timer.on? "block":"none"; if(Timer.on) Timer.tick(); });
+ui.copy.addEventListener("click", copyShare);
+ui.webshare.addEventListener("click", shareWeb);
+ui.x.addEventListener("click", openX);
+ui.fb.addEventListener("click", openFB);
+ui.story.addEventListener("click", downloadStory);
+ui.sound.addEventListener("click", ()=>{ soundOn=!soundOn; ui.sound.textContent = soundOn? "Sound on":"Sound off"; });
+
+ui.friendParse.addEventListener("click", buildFriendBoard);
+
+/* ========== Init ========== */
+buildIndex();
+startRound();
+/* end */
 </script>
 </body>
 </html>
