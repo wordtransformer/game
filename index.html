@@ -8,8 +8,7 @@
 <style>
   :root{
     --bg:#f7f8fb; --panel:#ffffff; --text:#1b1f29; --muted:#58627a; --border:#e3e7ef;
-    --accent:#0b84ff; --accent-2:#ff6a00; --ok:#10b981; --bad:#ef4444;
-    --hint:#0b84ff; --warn:#ffb020;
+    --accent:#0b84ff; --accent-2:#ff6a00; --ok:#10b981; --bad:#ef4444; --hint:#0b84ff; --warn:#ffb020;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -32,6 +31,7 @@
   @media (max-width:620px){.game-row{grid-template-columns:1fr}}
   .word-box,.entry{display:grid;gap:6px;background:#f7faff;border:1px solid var(--border);border-radius:12px;padding:12px}
   .word{font-weight:900;letter-spacing:2px;font-size:28px;text-align:center}
+  .word.danger{color:var(--bad)}
   input[type="text"]{width:100%;background:#fff;color:var(--text);border:2px solid var(--accent);border-radius:12px;padding:12px;font-size:18px;letter-spacing:1px;outline:none}
   input[type="text"]:focus{box-shadow:0 0 0 3px rgba(11,132,255,.25)}
   .buttons{display:grid;grid-auto-flow:column;gap:8px;justify-content:center}
@@ -42,14 +42,14 @@
   .chain{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-height:180px;overflow:auto}
   @media (max-width:580px){.chain{grid-template-columns:repeat(4,1fr)}}
   .pill{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:8px 6px;font-weight:800;font-size:14px;letter-spacing:1px;text-align:center}
-  .sharebar{display:grid;grid-auto-flow:column;gap:8px;justify-content:center;align-items:center}
-  .switch{appearance:none;width:38px;height:22px;background:#cfd7ea;border-radius:11px;position:relative;outline:none;cursor:pointer}
-  .switch:checked{background:#22c55e}
-  .switch:before{content:"";position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:2px;left:2px;transition:left .15s ease}
-  .switch:checked:before{left:18px}
-  .friendbox{display:grid;gap:6px;background:#f7faff;border:1px solid var(--border);border-radius:12px;padding:10px}
   .hintline{min-height:20px;font-size:13px}
   .hint-ok{color:var(--ok)} .hint-warn{color:var(--warn)} .hint-bad{color:var(--bad)}
+  .friendbox{display:grid;gap:6px;background:#f7faff;border:1px solid var(--border);border-radius:12px;padding:10px}
+  .sharebar{display:grid;grid-auto-flow:column;gap:8px;justify-content:center;align-items:center}
+  /* icon buttons */
+  button.icon { display:inline-grid; grid-auto-flow:column; align-items:center; gap:6px; }
+  button.icon svg{ width:18px; height:18px; display:block; }
+  @media (max-width:480px){ button.icon span.label{ display:none; } }
   canvas#fx{position:fixed;inset:0;pointer-events:none}
 </style>
 </head>
@@ -108,12 +108,36 @@
     <div id="chain" class="chain"></div>
 
     <div class="sharebar">
-      <button id="copyBtn">Copy share</button>
-      <button id="webshareBtn">Share…</button>
-      <button id="xBtn">Share to X</button>
-      <button id="fbBtn">Share to Facebook</button>
-      <button id="storyBtn">Story card</button>
-      <button id="soundBtn">Sound on</button>
+      <button id="copyBtn" class="icon" aria-label="Copy share">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v12h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+        <span class="label">Copy</span>
+      </button>
+
+      <button id="webshareBtn" class="icon" aria-label="Share">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8a3 3 0 0 0-2.82 2H8.82a3 3 0 0 0 0 4h6.36A3 3 0 1 0 18 8zm-12 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM18 10a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>
+        <span class="label">Share…</span>
+      </button>
+
+      <button id="xBtn" class="icon" aria-label="Share to X">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2H21L14.36 9.57 22 22h-6.244l-4.66-7.26L5.6 22H3l7.18-8.28L2 2h6.31l4.2 6.63L18.244 2zM7.42 3.5H5.53l11.07 17h1.89l-11.07-17z"/></svg>
+        <span class="label">X</span>
+      </button>
+
+      <button id="fbBtn" class="icon" aria-label="Share to Facebook">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12.07C22 6.48 17.52 2 11.93 2S2 6.48 2 12.07C2 17.1 5.66 21.21 10.44 22v-7.03H7.9v-2.9h2.54V9.41c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.23.2 2.23.2v2.45h-1.26c-1.24 0-1.63.77-1.63 1.56v1.87h2.78l-.44 2.9h-2.34V22C18.34 21.21 22 17.1 22 12.07z"/></svg>
+        <span class="label">Facebook</span>
+      </button>
+
+      <button id="storyBtn" class="icon" aria-label="Story card">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14a2 2 0 0 1 2 2v12.5a1.5 1.5 0 0 1-2.32 1.26l-2.92-1.95a2 2 0 0 0-2.22 0l-2.1 1.4a2 2 0 0 1-2.22 0l-2.92-1.95A1.5 1.5 0 0 0 3 17.5V5a2 2 0 0 1 2-2zm1.5 3A1.5 1.5 0 1 0 8 7.5 1.5 1.5 0 0 0 6.5 6z"/></svg>
+        <span class="label">Story</span>
+      </button>
+
+      <button id="soundBtn" class="icon" aria-label="Toggle sound">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zm-2.5-9.5v3a7.5 7.5 0 0 1 0 13v3a10.5 10.5 0 0 0 0-19z"/></svg>
+        <span class="label">Sound on</span>
+      </button>
+
       <select id="themePick" title="Theme">
         <option value="light">Light</option>
         <option value="dark">Dark</option>
@@ -135,6 +159,8 @@
 <script>
 /* configuration */
 const SITE_URL = location.href.split('#')[0];
+/* danger threshold: current word turns red when remaining next moves <= this */
+const DANGER_THRESH = 2; // try 2 or 1
 
 /* helpers */
 const norm = s => (s||"").toLowerCase().trim();
@@ -231,7 +257,7 @@ const ui = {
   hint: document.getElementById("hint")
 };
 
-/* dictionary sources from the gist you gave, with fallbacks */
+/* dictionary sources from the gist you shared, with fallbacks */
 const GIST_LA = "https://gist.githubusercontent.com/scholtes/94f3c0303ba6a7768b47583aff36654d/raw/wordle-La.txt";
 const GIST_TA = "https://gist.githubusercontent.com/scholtes/94f3c0303ba6a7768b47583aff36654d/raw/wordle-Ta.txt";
 const TABATKINS = "https://raw.githubusercontent.com/tabatkins/wordle-list/main/words";
@@ -334,6 +360,10 @@ async function loadDictionaries(){
 const state = { start:null, chain:[], used:new Set(), key:null, maxEstimate:null };
 
 /* UI logic */
+function subtleShake(el){
+  el.animate([{transform:'translateX(0)'},{transform:'translateX(-2px)'},{transform:'translateX(2px)'},{transform:'translateX(0)'}],
+             {duration:180, iterations:1});
+}
 function addPill(w, start=false){
   const div=document.createElement("div"); div.className="pill"; div.textContent=w.toUpperCase();
   if(start) div.title="start"; ui.chain.prepend(div);
@@ -343,6 +373,10 @@ function setCounts(word){
   const currentMoves = neighborsOf(word).filter(v=>!state.used.has(v)).length;
   ui.fromStart.textContent = String(startMoves);
   ui.remain.textContent = String(currentMoves);
+
+  if (currentMoves <= DANGER_THRESH) { ui.current.classList.add('danger'); subtleShake(ui.current); }
+  else ui.current.classList.remove('danger');
+
   const max = state.maxEstimate || 0;
   const goal = Math.max(1,max);
   const pct = Math.min(100, Math.round((state.chain.length-1)/goal*100));
@@ -411,7 +445,6 @@ function previewWord(raw){
   if(!dictIncludes(w)){ ui.hint.textContent="Not in word list"; ui.hint.className="hintline hint-bad"; return; }
   if(state.used.has(w)){ ui.hint.textContent="Already used in your chain"; ui.hint.className="hintline hint-bad"; return; }
   if(!ham1(last,w)){ ui.hint.textContent="Must change exactly one letter from "+last.toUpperCase(); ui.hint.className="hintline hint-bad"; return; }
-  // valid candidate: show neighbor count it would open, excluding used words
   const nbs = neighborsOf(w).filter(v=>!state.used.has(v) && v!==last);
   const count = nbs.length;
   if(count===0){ ui.hint.textContent="Valid, but likely a dead end (opens 0 new words)"; ui.hint.className="hintline hint-warn"; return; }
@@ -538,7 +571,6 @@ ui.dictBtn.addEventListener("click", ()=>{
   ui.dictBtn.textContent = "Lenient: " + (USE_LENIENT ? "On" : "Off");
   dictIncludes._sets = {};
   buildIndex();
-  // recompute start moves and preview if user is typing
   setCounts(state.chain[state.chain.length-1]);
   previewWord(ui.guess.value);
   showMsg(USE_LENIENT ? "Lenient dictionary enabled" : "Standard dictionary", true);
