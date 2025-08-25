@@ -46,7 +46,6 @@
   .hint-ok{color:var(--ok)} .hint-warn{color:var(--warn)} .hint-bad{color:var(--bad)}
   .friendbox{display:grid;gap:6px;background:#f7faff;border:1px solid var(--border);border-radius:12px;padding:10px}
   .sharebar{display:grid;grid-auto-flow:column;gap:8px;justify-content:center;align-items:center}
-  /* icon buttons */
   button.icon { display:inline-grid; grid-auto-flow:column; align-items:center; gap:6px; }
   button.icon svg{ width:18px; height:18px; display:block; }
   @media (max-width:480px){ button.icon span.label{ display:none; } }
@@ -112,32 +111,26 @@
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v12h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
         <span class="label">Copy</span>
       </button>
-
       <button id="webshareBtn" class="icon" aria-label="Share">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8a3 3 0 0 0-2.82 2H8.82a3 3 0 0 0 0 4h6.36A3 3 0 1 0 18 8zm-12 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM18 10a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>
         <span class="label">Share…</span>
       </button>
-
       <button id="xBtn" class="icon" aria-label="Share to X">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2H21L14.36 9.57 22 22h-6.244l-4.66-7.26L5.6 22H3l7.18-8.28L2 2h6.31l4.2 6.63L18.244 2zM7.42 3.5H5.53l11.07 17h1.89l-11.07-17z"/></svg>
         <span class="label">X</span>
       </button>
-
       <button id="fbBtn" class="icon" aria-label="Share to Facebook">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12.07C22 6.48 17.52 2 11.93 2S2 6.48 2 12.07C2 17.1 5.66 21.21 10.44 22v-7.03H7.9v-2.9h2.54V9.41c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.23.2 2.23.2v2.45h-1.26c-1.24 0-1.63.77-1.63 1.56v1.87h2.78l-.44 2.9h-2.34V22C18.34 21.21 22 17.1 22 12.07z"/></svg>
         <span class="label">Facebook</span>
       </button>
-
       <button id="storyBtn" class="icon" aria-label="Story card">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14a2 2 0 0 1 2 2v12.5a1.5 1.5 0 0 1-2.32 1.26l-2.92-1.95a2 2 0 0 0-2.22 0l-2.1 1.4a2 2 0 0 1-2.22 0l-2.92-1.95A1.5 1.5 0 0 0 3 17.5V5a2 2 0 0 1 2-2zm1.5 3A1.5 1.5 0 1 0 8 7.5 1.5 1.5 0 0 0 6.5 6z"/></svg>
         <span class="label">Story</span>
       </button>
-
       <button id="soundBtn" class="icon" aria-label="Toggle sound">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zm-2.5-9.5v3a7.5 7.5 0 0 1 0 13v3a10.5 10.5 0 0 0 0-19z"/></svg>
         <span class="label">Sound on</span>
       </button>
-
       <select id="themePick" title="Theme">
         <option value="light">Light</option>
         <option value="dark">Dark</option>
@@ -159,8 +152,7 @@
 <script>
 /* configuration */
 const SITE_URL = location.href.split('#')[0];
-/* danger threshold: current word turns red when remaining next moves <= this */
-const DANGER_THRESH = 2; // try 2 or 1
+const DANGER_THRESH = 2; // Current word turns red when remaining next moves <= this
 
 /* helpers */
 const norm = s => (s||"").toLowerCase().trim();
@@ -169,10 +161,9 @@ const ham1 = (a,b) => { if(a.length!==5||b.length!==5) return false; let d=0; fo
 const ymd = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+String(d.getDate()).padStart(2,'0'); };
 function seededPick(arr, seedStr){ let h=0; for(let i=0;i<seedStr.length;i++) h=(h*131+seedStr.charCodeAt(i))>>>0; function rng(){ h=(h*1664525+1013904223)>>>0; return h/2**32; } return arr[Math.floor(rng()*arr.length)]; }
 
-/* audio and confetti */
+/* audio + confetti */
 let soundOn = true;
-const AudioFX = (()=> {
-  let ctx;
+const AudioFX = (()=>{ let ctx;
   function ac(){ return ctx||(ctx=new (window.AudioContext||window.webkitAudioContext)()); }
   function tone(freq, dur, type="sine", gain=0.15){
     if(!soundOn) return;
@@ -185,15 +176,10 @@ const AudioFX = (()=> {
   function buzz(){ tone(200,.05,"square",.12); setTimeout(()=>tone(180,.06,"square",.1),60); }
   return { chord, fanfare, buzz };
 })();
-const FX = (()=> {
-  const cv = document.getElementById("fx"), cx = cv.getContext("2d");
-  let running=false, parts=[];
-  function resize(){ cv.width=innerWidth; cv.height=innerHeight; }
-  addEventListener("resize",resize); resize();
+const FX = (()=>{ const cv=document.getElementById("fx"), cx=cv.getContext("2d"); let running=false, parts=[];
+  function resize(){ cv.width=innerWidth; cv.height=innerHeight; } addEventListener("resize",resize); resize();
   function burst(x,y,n=160){
-    for(let i=0;i<n;i++){
-      parts.push({x,y,vx:(Math.random()*2-1)*6,vy:Math.random()*-6-2,r:Math.random()*6+2,a:1,c:Math.random()<.5?"#0b84ff":"#ff6a00",spin:(Math.random()*2-1)*.2});
-    }
+    for(let i=0;i<n;i++){ parts.push({x,y,vx:(Math.random()*2-1)*6,vy:Math.random()*-6-2,r:Math.random()*6+2,a:1,c:Math.random()<.5?"#0b84ff":"#ff6a00",spin:(Math.random()*2-1)*.2}); }
     if(!running){ running=true; requestAnimationFrame(tick); }
   }
   function tick(){
@@ -204,7 +190,7 @@ const FX = (()=> {
       cx.beginPath(); cx.moveTo(-p.r,0); cx.lineTo(0,-p.r); cx.lineTo(p.r,0); cx.lineTo(0,p.r); cx.closePath(); cx.fill();
       cx.restore();
     }
-    parts = parts.filter(p=>p.a>0.05 && p.y<cv.height+20);
+    parts=parts.filter(p=>p.a>0.05 && p.y<cv.height+20);
     if(parts.length){ requestAnimationFrame(tick); } else { running=false; }
   }
   return { burst };
@@ -218,9 +204,9 @@ const THEMES = {
 };
 function applyTheme(name){
   const t = THEMES[name] || THEMES.light;
-  for (const k in t) document.documentElement.style.setProperty(k, t[k]);
+  for(const k in t) document.documentElement.style.setProperty(k, t[k]);
   localStorage.setItem('tx_theme', name);
-  const sel = document.getElementById('themePick'); if (sel) sel.value = name;
+  const sel=document.getElementById('themePick'); if(sel) sel.value=name;
 }
 
 /* UI refs */
@@ -257,11 +243,11 @@ const ui = {
   hint: document.getElementById("hint")
 };
 
-/* dictionary sources from the gist you shared, with fallbacks */
+/* dictionary sources (Wordle gist first) */
 const GIST_LA = "https://gist.githubusercontent.com/scholtes/94f3c0303ba6a7768b47583aff36654d/raw/wordle-La.txt";
 const GIST_TA = "https://gist.githubusercontent.com/scholtes/94f3c0303ba6a7768b47583aff36654d/raw/wordle-Ta.txt";
 const TABATKINS = "https://raw.githubusercontent.com/tabatkins/wordle-list/main/words";
-const EXTRA_URL = "https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt";
+const EXTRA_URL  = "https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt"; // loaded only on demand
 
 /* dictionary state */
 const FALLBACK = Array.from(new Set([
@@ -274,9 +260,10 @@ const FALLBACK = Array.from(new Set([
   "thing","think","thank","other","which","their","these","would","could",
   "train","grain","brain","plane","flame","frame","blame","swine"
 ]));
-let DICT_STD = FALLBACK.slice();     // Standard mode
-let DICT_LENIENT = FALLBACK.slice(); // Lenient mode
+let DICT_STD     = FALLBACK.slice(); // Standard
+let DICT_LENIENT = FALLBACK.slice(); // Will grow when lenient loads
 let USE_LENIENT = false;
+let LENIENT_READY = false;
 
 /* cache helpers */
 function loadCache(key){ try{ return JSON.parse(localStorage.getItem(key)||"null"); } catch { return null; } }
@@ -286,19 +273,17 @@ function saveCache(key,val){ try{ localStorage.setItem(key, JSON.stringify(val))
 let patterns = new Map();
 function currentDict(){ return USE_LENIENT ? DICT_LENIENT : DICT_STD; }
 function buildIndex(){
-  const base = currentDict();
-  patterns = new Map();
+  const base=currentDict(); patterns=new Map();
   for(const w of base){
     for(let i=0;i<5;i++){
-      const pat = w.slice(0,i)+"*"+w.slice(i+1);
+      const pat=w.slice(0,i)+"*"+w.slice(i+1);
       if(!patterns.has(pat)) patterns.set(pat,[]);
       patterns.get(pat).push(w);
     }
   }
 }
 function neighborsOf(w){
-  const byWord = new Set(currentDict());
-  const out=new Set();
+  const byWord=new Set(currentDict()); const out=new Set();
   for(let i=0;i<5;i++){
     const pat=w.slice(0,i)+"*"+w.slice(i+1);
     const list=patterns.get(pat)||[];
@@ -313,47 +298,47 @@ function dictIncludes(word){
   return dictIncludes._sets[key].has(word);
 }
 
-/* load dictionaries in order: gist La+Ta, then Tabatkins, then extra for lenient */
+/* load Wordle lists at startup (fast) */
 async function loadDictionaries(){
   const c1 = loadCache("tx_dict_std_gist_v1");
   const c2 = loadCache("tx_dict_len_gist_v1");
   if(c1 && c2){ DICT_STD=c1; DICT_LENIENT=c2; buildIndex(); return; }
 
-  let std = new Set(FALLBACK);
-  let len = new Set(FALLBACK);
+  let std=new Set(FALLBACK), len=new Set(FALLBACK);
 
-  async function addWordFile(url, targetSet){
-    try{
-      const res = await fetch(url, {mode:"cors"});
-      if(!res.ok) return;
-      const txt = await res.text();
-      txt.split(/[\s\r\n]+/).map(norm).filter(is5).forEach(w=>targetSet.add(w));
+  async function addList(url,set){
+    try{ const r=await fetch(url,{mode:"cors"}); if(!r.ok) return;
+      (await r.text()).split(/[\s\r\n]+/).map(norm).filter(is5).forEach(w=>set.add(w));
     }catch{}
   }
 
-  await addWordFile(GIST_LA, std);
-  await addWordFile(GIST_TA, std);
-  await addWordFile(GIST_LA, len);
-  await addWordFile(GIST_TA, len);
+  await addList(GIST_LA, std); await addList(GIST_TA, std);
+  await addList(GIST_LA, len); await addList(GIST_TA, len);
+  await addList(TABATKINS, std); await addList(TABATKINS, len);
 
-  await addWordFile(TABATKINS, std);
-  await addWordFile(TABATKINS, len);
-
-  try{
-    const res = await fetch(EXTRA_URL, {mode:"cors"});
-    if(res.ok){
-      const txt = await res.text();
-      txt.split(/\r?\n/).forEach(w=>{ const v=norm(w); if(is5(v)) len.add(v); });
-    }
-  }catch{}
-
-  DICT_STD = Array.from(std);
-  DICT_LENIENT = Array.from(len);
-
+  DICT_STD=Array.from(std); DICT_LENIENT=Array.from(len);
   saveCache("tx_dict_std_gist_v1", DICT_STD);
   saveCache("tx_dict_len_gist_v1", DICT_LENIENT);
-
   buildIndex();
+}
+
+/* load the huge list only when requested */
+async function ensureLenientLoaded(){
+  if (LENIENT_READY) return;
+  const cached = loadCache("tx_dict_len_big_v1");
+  if (cached && Array.isArray(cached) && cached.length) { DICT_LENIENT=cached; LENIENT_READY=true; return; }
+  try{
+    if(ui.dictBtn){ ui.dictBtn.disabled=true; ui.dictBtn.textContent="Lenient: loading…"; }
+    const res = await fetch(EXTRA_URL,{mode:"cors"}); if(!res.ok) throw new Error("fetch failed");
+    const txt = await res.text();
+    const add = new Set(DICT_LENIENT);
+    txt.split(/\r?\n/).forEach(w=>{ const v=norm(w); if(/^[a-z]{5}$/.test(v)) add.add(v); });
+    DICT_LENIENT = Array.from(add);
+    saveCache("tx_dict_len_big_v1", DICT_LENIENT);
+    LENIENT_READY = true;
+  } finally {
+    if(ui.dictBtn){ ui.dictBtn.disabled=false; ui.dictBtn.textContent="Lenient: " + (USE_LENIENT ? "On" : "Off"); }
+  }
 }
 
 /* game state */
@@ -499,55 +484,38 @@ function shareText(){
   const start = state.start?.toUpperCase() || "?????";
   return `Transformations ${d}  start ${start}  score ${score}  max ${max}  ${SITE_URL}`;
 }
-function copyShare(){
-  const t = shareText();
-  navigator.clipboard?.writeText(t).then(()=>showMsg("Copied",true)).catch(()=>showMsg("Copy failed"));
-}
-function shareWeb(){
-  const t = shareText();
-  if(navigator.share){ navigator.share({title:"Transformations", text:t, url:SITE_URL}).catch(()=>{}); }
-  else { copyShare(); }
-}
-function openX(){
-  const url = "https://twitter.com/intent/tweet?text="+encodeURIComponent(shareText());
-  window.open(url,"_blank");
-}
-function openFB(){
-  const url = "https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(SITE_URL)+"&quote="+encodeURIComponent(shareText());
-  window.open(url,"_blank");
-}
+function copyShare(){ const t=shareText(); navigator.clipboard?.writeText(t).then(()=>showMsg("Copied",true)).catch(()=>showMsg("Copy failed")); }
+function shareWeb(){ const t=shareText(); if(navigator.share){ navigator.share({title:"Transformations", text:t, url:SITE_URL}).catch(()=>{}); } else { copyShare(); } }
+function openX(){ const url="https://twitter.com/intent/tweet?text="+encodeURIComponent(shareText()); window.open(url,"_blank"); }
+function openFB(){ const url="https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(SITE_URL)+"&quote="+encodeURIComponent(shareText()); window.open(url,"_blank"); }
 function storyImageDataURL(){
-  const W=1080,H=1920;
-  const c=document.createElement("canvas"); c.width=W; c.height=H; const ctx=c.getContext("2d");
+  const W=1080,H=1920; const c=document.createElement("canvas"); c.width=W; c.height=H; const ctx=c.getContext("2d");
   const g=ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,"#ffffff"); g.addColorStop(1,"#eaf2ff"); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle="#0b84ff"; ctx.fillRect(80, 560, W-160, 18);
-  const score = state.chain.length-1, max = state.maxEstimate||0; const pct = max? Math.min(1, score/max):0;
-  ctx.fillStyle="#ff6a00"; ctx.fillRect(80, 560, Math.round((W-160)*pct), 18);
-  ctx.fillStyle="#1b1f29"; ctx.font="900 84px Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial"; ctx.fillText("TRANSFORMATIONS", 80, 200);
-  ctx.font="28px Inter, system-ui"; ctx.fillText(ymd(), 80, 240);
-  ctx.font="48px Inter, system-ui"; ctx.fillText("Start "+(state.start||"").toUpperCase(), 80, 340);
-  ctx.font="72px Inter, system-ui"; ctx.fillText("Score "+score+(max?(" / "+max):""), 80, 430);
-  ctx.font="28px Inter, system-ui"; ctx.fillText(SITE_URL, 80, H-80);
+  ctx.fillStyle="#0b84ff"; ctx.fillRect(80,560,W-160,18);
+  const score=state.chain.length-1, max=state.maxEstimate||0; const pct=max?Math.min(1,score/max):0;
+  ctx.fillStyle="#ff6a00"; ctx.fillRect(80,560,Math.round((W-160)*pct),18);
+  ctx.fillStyle="#1b1f29"; ctx.font="900 84px Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial"; ctx.fillText("TRANSFORMATIONS",80,200);
+  ctx.font="28px Inter, system-ui"; ctx.fillText(ymd(),80,240);
+  ctx.font="48px Inter, system-ui"; ctx.fillText("Start "+(state.start||"").toUpperCase(),80,340);
+  ctx.font="72px Inter, system-ui"; ctx.fillText("Score "+score+(max?(" / "+max):""),80,430);
+  ctx.font="28px Inter, system-ui"; ctx.fillText(SITE_URL,80,H-80);
   let x=80,y=660;
   for(const w of state.chain){
-    ctx.fillStyle="#0b84ff"; ctx.beginPath(); const r=14, ww=48+ w.length*22; if(ctx.roundRect) ctx.roundRect(x,y,ww,44,r); else ctx.rect(x,y,ww,44); ctx.fill();
+    ctx.fillStyle="#0b84ff"; ctx.beginPath(); const r=14, ww=48+w.length*22; if(ctx.roundRect) ctx.roundRect(x,y,ww,44,r); else ctx.rect(x,y,ww,44); ctx.fill();
     ctx.fillStyle="#fff"; ctx.font="600 28px Inter, system-ui"; ctx.fillText(w.toUpperCase(), x+16, y+30);
     x+=ww+12; if(x>W-200){ x=80; y+=60; }
   }
   return c.toDataURL("image/png");
 }
-function downloadStory(){
-  const url = storyImageDataURL();
-  const a=document.createElement("a"); a.href=url; a.download="transformations-story.png"; document.body.appendChild(a); a.click(); a.remove();
-}
+function downloadStory(){ const url=storyImageDataURL(); const a=document.createElement("a"); a.href=url; a.download="transformations-story.png"; document.body.appendChild(a); a.click(); a.remove(); }
 
 /* friend leaderboard */
 function buildFriendBoard(){
-  const lines = ui.friendInput.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-  const rows = [];
+  const lines=ui.friendInput.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const rows=[];
   for(const ln of lines){
-    const m = ln.match(/Transformations\s+(\d{4}-\d{2}-\d{2}).*?start\s+([A-Za-z]{5}).*?score\s+(\d+).*?(?:max\s+(\d+))?.*?(?:by\s+(.+))?$/i);
-    if(m){ rows.push({date:m[1], start:m[2].toUpperCase(), score:parseInt(m[3],10)||0, max:m[4]?parseInt(m[4],10):null, who:(m[5]||"friend").trim()}); }
+    const m=ln.match(/Transformations\s+(\d{4}-\d{2}-\d{2}).*?start\s+([A-Za-z]{5}).*?score\s+(\d+).*?(?:max\s+(\d+))?.*?(?:by\s+(.+))?$/i);
+    if(m){ rows.push({date:m[1],start:m[2].toUpperCase(),score:parseInt(m[3],10)||0,max:m[4]?parseInt(m[4],10):null,who:(m[5]||"friend").trim()}); }
   }
   rows.sort((a,b)=>b.score-a.score);
   ui.friendBoard.innerHTML = rows.length? "<b>Leaderboard</b><br>"+rows.map((r,i)=>`${i+1}. ${r.who}  score ${r.score}${r.max? " of "+r.max:""}  start ${r.start}`).join("<br>") : "No valid lines yet";
@@ -555,7 +523,7 @@ function buildFriendBoard(){
 
 /* events */
 ui.enter.addEventListener("click", ()=> tryPlay(ui.guess.value));
-ui.guess.addEventListener("keydown", e=>{ if(e.key==="Enter") tryPlay(ui.guess.value); });
+ui.guess.addEventListener("keydown", e=>{ if(e.key==="Enter") tryPlay(e.target.value); });
 ui.guess.addEventListener("input", e=> previewWord(e.target.value));
 ui.end.addEventListener("click", endRound);
 ui.reset.addEventListener("click", ()=>{ buildIndex(); startRound(); ui.hint.textContent=""; });
@@ -566,8 +534,13 @@ ui.x.addEventListener("click", openX);
 ui.fb.addEventListener("click", openFB);
 ui.story.addEventListener("click", downloadStory);
 ui.sound.addEventListener("click", ()=>{ soundOn=!soundOn; ui.sound.textContent = soundOn? "Sound on":"Sound off"; });
-ui.dictBtn.addEventListener("click", ()=>{
-  USE_LENIENT = !USE_LENIENT;
+ui.dictBtn.addEventListener("click", async ()=>{
+  const turningOn = !USE_LENIENT;
+  if (turningOn && !LENIENT_READY){
+    try{ await ensureLenientLoaded(); }
+    catch{ showMsg("Couldn’t load lenient list"); return; }
+  }
+  USE_LENIENT = turningOn;
   ui.dictBtn.textContent = "Lenient: " + (USE_LENIENT ? "On" : "Off");
   dictIncludes._sets = {};
   buildIndex();
@@ -580,13 +553,7 @@ ui.themePick.addEventListener("change", e=>applyTheme(e.target.value));
 
 /* init */
 applyTheme(localStorage.getItem('tx_theme') || 'light');
-loadDictionaries().then(()=>{
-  buildIndex();
-  startRound();
-}).catch(()=>{
-  buildIndex();
-  startRound();
-});
+loadDictionaries().then(()=>{ buildIndex(); startRound(); }).catch(()=>{ buildIndex(); startRound(); });
 </script>
 </body>
 </html>
