@@ -9,6 +9,7 @@
   :root{
     --bg:#f7f8fb; --panel:#ffffff; --text:#1b1f29; --muted:#58627a; --border:#e3e7ef;
     --accent:#0b84ff; --accent-2:#ff6a00; --ok:#10b981; --bad:#ef4444;
+    --hint:#0b84ff; --warn:#ffb020;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -17,7 +18,9 @@
   h1{margin:0;font-size:20px;font-weight:800;letter-spacing:.2px}
   .sub{color:var(--muted);font-size:12px}
   main{display:grid;place-items:center;padding:10px}
-  .board{width:100%;max-width:680px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;display:grid;gap:12px;position:relative}
+  .board{width:100%;max-width:720px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;display:grid;gap:12px;position:relative}
+  .topline{display:grid;grid-template-columns:1fr auto;align-items:end}
+  .bigmax{font-size:28px;font-weight:900;letter-spacing:.4px}
   .status{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
   .stat{background:#f2f5fb;border:1px solid var(--border);border-radius:12px;padding:8px;display:grid;gap:2px;place-items:center}
   .stat .n{font-size:18px;font-weight:800}
@@ -26,7 +29,7 @@
   .progress>div{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .25s ease}
   .bar{text-align:center;font-size:12px;color:var(--muted)}
   .game-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media (max-width:580px){.game-row{grid-template-columns:1fr}}
+  @media (max-width:620px){.game-row{grid-template-columns:1fr}}
   .word-box,.entry{display:grid;gap:6px;background:#f7faff;border:1px solid var(--border);border-radius:12px;padding:12px}
   .word{font-weight:900;letter-spacing:2px;font-size:28px;text-align:center}
   input[type="text"]{width:100%;background:#fff;color:var(--text);border:2px solid var(--accent);border-radius:12px;padding:12px;font-size:18px;letter-spacing:1px;outline:none}
@@ -45,6 +48,8 @@
   .switch:before{content:"";position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:2px;left:2px;transition:left .15s ease}
   .switch:checked:before{left:18px}
   .friendbox{display:grid;gap:6px;background:#f7faff;border:1px solid var(--border);border-radius:12px;padding:10px}
+  .hintline{min-height:20px;font-size:13px}
+  .hint-ok{color:var(--ok)} .hint-warn{color:var(--warn)} .hint-bad{color:var(--bad)}
   canvas#fx{position:fixed;inset:0;pointer-events:none}
 </style>
 </head>
@@ -59,6 +64,11 @@
 
 <main>
   <div class="board">
+    <div class="topline">
+      <div class="bigmax">Max possible chain today: <span id="bigMaxN">?</span></div>
+      <div class="small">Progress</div>
+    </div>
+
     <div class="status">
       <div class="stat"><div class="small">Score</div><div id="scoreN" class="n">0</div></div>
       <div class="stat"><div class="small">Start moves</div><div id="fromStartN" class="n">0</div></div>
@@ -89,6 +99,7 @@
           <button id="resetBtn">Reset</button>
           <button id="dictModeBtn" title="Broader word list">Lenient: Off</button>
         </div>
+        <div id="hint" class="hintline"></div>
         <div id="msg" class="small msg"></div>
       </div>
     </div>
@@ -215,10 +226,12 @@ const ui = {
   themePick: document.getElementById("themePick"),
   friendInput: document.getElementById("friendInput"),
   friendParse: document.getElementById("friendParse"),
-  friendBoard: document.getElementById("friendBoard")
+  friendBoard: document.getElementById("friendBoard"),
+  bigMaxN: document.getElementById("bigMaxN"),
+  hint: document.getElementById("hint")
 };
 
-/* dictionary sources */
+/* dictionary sources from the gist you gave, with fallbacks */
 const GIST_LA = "https://gist.githubusercontent.com/scholtes/94f3c0303ba6a7768b47583aff36654d/raw/wordle-La.txt";
 const GIST_TA = "https://gist.githubusercontent.com/scholtes/94f3c0303ba6a7768b47583aff36654d/raw/wordle-Ta.txt";
 const TABATKINS = "https://raw.githubusercontent.com/tabatkins/wordle-list/main/words";
@@ -288,27 +301,22 @@ async function loadDictionaries(){
       const res = await fetch(url, {mode:"cors"});
       if(!res.ok) return;
       const txt = await res.text();
-      // Both gist files and Tabatkins list are whitespace separated or newline lists
       txt.split(/[\s\r\n]+/).map(norm).filter(is5).forEach(w=>targetSet.add(w));
     }catch{}
   }
 
-  // gist Wordle La and Ta
   await addWordFile(GIST_LA, std);
-  await addWordFile(GIST_TA, std);   // include Ta for allowed guesses
+  await addWordFile(GIST_TA, std);
   await addWordFile(GIST_LA, len);
   await addWordFile(GIST_TA, len);
 
-  // backup list if gist is unavailable
   await addWordFile(TABATKINS, std);
   await addWordFile(TABATKINS, len);
 
-  // only lenient pulls from the huge list
   try{
     const res = await fetch(EXTRA_URL, {mode:"cors"});
     if(res.ok){
       const txt = await res.text();
-      // streaming parse is overkill here; quick split works in browsers
       txt.split(/\r?\n/).forEach(w=>{ const v=norm(w); if(is5(v)) len.add(v); });
     }
   }catch{}
@@ -341,6 +349,7 @@ function setCounts(word){
   ui.progFill.style.width = pct + "%";
   ui.maxLine.textContent = max ? "Max today " + max : "Max today ?";
   ui.maxToday.textContent = max ? String(max) : "?";
+  ui.bigMaxN.textContent = ui.maxToday.textContent;
 }
 function setCurrent(w){ ui.current.textContent=w.toUpperCase(); setCounts(w); }
 function showMsg(text, ok=false){
@@ -353,6 +362,8 @@ function updatePB(){
   if(sc>prev){ localStorage.setItem("tx_pb_chain", String(sc)); AudioFX.fanfare(); FX.burst(innerWidth*0.5, 120); }
   ui.pb.textContent = String(Math.max(prev, sc));
 }
+
+/* longest chain estimate */
 function computeMaxQuick(){
   const words=currentDict(), idx=new Map(words.map((w,i)=>[w,i]));
   const adj=words.map(_=>[]);
@@ -364,10 +375,14 @@ function computeMaxQuick(){
   dfs(startIdx,1,1200);
   return Math.max(0,best-1);
 }
+
+/* daily start */
 function pickDailyStart(){
   const candidates = currentDict().filter(w=>neighborsOf(w).length>=2);
   return candidates.length ? seededPick(candidates, ymd()+":"+currentDict().length) : currentDict()[0] || "about";
 }
+
+/* start and play */
 function startRound(){
   state.key = ymd();
   state.start = pickDailyStart();
@@ -386,6 +401,26 @@ function startRound(){
   const prev = parseInt(localStorage.getItem("tx_pb_chain")||"0",10);
   ui.pb.textContent = String(prev);
 }
+
+/* live hinting before Enter */
+function previewWord(raw){
+  const w = norm(raw);
+  const last = state.chain[state.chain.length-1];
+  if(!w){ ui.hint.textContent=""; return; }
+  if(!is5(w)){ ui.hint.textContent="Type five letters"; ui.hint.className="hintline hint-bad"; return; }
+  if(!dictIncludes(w)){ ui.hint.textContent="Not in word list"; ui.hint.className="hintline hint-bad"; return; }
+  if(state.used.has(w)){ ui.hint.textContent="Already used in your chain"; ui.hint.className="hintline hint-bad"; return; }
+  if(!ham1(last,w)){ ui.hint.textContent="Must change exactly one letter from "+last.toUpperCase(); ui.hint.className="hintline hint-bad"; return; }
+  // valid candidate: show neighbor count it would open, excluding used words
+  const nbs = neighborsOf(w).filter(v=>!state.used.has(v) && v!==last);
+  const count = nbs.length;
+  if(count===0){ ui.hint.textContent="Valid, but likely a dead end (opens 0 new words)"; ui.hint.className="hintline hint-warn"; return; }
+  if(count<=2){ ui.hint.textContent="Valid, but tight branch (opens "+count+")"; ui.hint.className="hintline hint-warn"; return; }
+  ui.hint.textContent = "Valid. This move would open "+count+" next words";
+  ui.hint.className = "hintline hint-ok";
+}
+
+/* commit a move */
 function tryPlay(raw){
   const next = norm(raw);
   const last = state.chain[state.chain.length-1];
@@ -396,10 +431,13 @@ function tryPlay(raw){
   state.chain.push(next); state.used.add(next); addPill(next);
   ui.score.textContent = String(state.chain.length-1);
   setCurrent(next);
+  ui.hint.textContent = "";
   showMsg("ok",true); AudioFX.chord([440,554,659],.18); FX.burst(innerWidth*0.5, 90, 40);
   ui.guess.value=""; ui.guess.focus();
   updatePB();
 }
+
+/* end round */
 function endRound(){
   state.maxEstimate = computeMaxQuick();
   setCounts(state.chain[state.chain.length-1]);
@@ -482,11 +520,12 @@ function buildFriendBoard(){
   ui.friendBoard.innerHTML = rows.length? "<b>Leaderboard</b><br>"+rows.map((r,i)=>`${i+1}. ${r.who}  score ${r.score}${r.max? " of "+r.max:""}  start ${r.start}`).join("<br>") : "No valid lines yet";
 }
 
-/* wire up events */
+/* events */
 ui.enter.addEventListener("click", ()=> tryPlay(ui.guess.value));
 ui.guess.addEventListener("keydown", e=>{ if(e.key==="Enter") tryPlay(ui.guess.value); });
+ui.guess.addEventListener("input", e=> previewWord(e.target.value));
 ui.end.addEventListener("click", endRound);
-ui.reset.addEventListener("click", ()=>{ buildIndex(); startRound(); });
+ui.reset.addEventListener("click", ()=>{ buildIndex(); startRound(); ui.hint.textContent=""; });
 ui.timerSwitch.addEventListener("change", ()=>{ Timer.on = ui.timerSwitch.checked; ui.countdown.style.display = Timer.on? "block":"none"; if(Timer.on) Timer.tick(); });
 ui.copy.addEventListener("click", copyShare);
 ui.webshare.addEventListener("click", shareWeb);
@@ -499,7 +538,9 @@ ui.dictBtn.addEventListener("click", ()=>{
   ui.dictBtn.textContent = "Lenient: " + (USE_LENIENT ? "On" : "Off");
   dictIncludes._sets = {};
   buildIndex();
+  // recompute start moves and preview if user is typing
   setCounts(state.chain[state.chain.length-1]);
+  previewWord(ui.guess.value);
   showMsg(USE_LENIENT ? "Lenient dictionary enabled" : "Standard dictionary", true);
 });
 ui.friendParse.addEventListener("click", buildFriendBoard);
